@@ -1,0 +1,13 @@
+.vscode
+*.autosave
+build/
+
+Makefile
+qrc_icons.cpp
+ui_*.h
+moc_*.cpp
+*.gba
+*.elf
+.qmake.stash
+moc_predefs.h
+*.pro.user

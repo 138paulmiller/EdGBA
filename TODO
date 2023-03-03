@@ -1,0 +1,71 @@
+[] Support multiple map layers.
+    - Layer editor that will blend
+    	- Maps will contain multiple pointers to tiles, that will be the layer data (tiles0, tiles1, tiles2, tiles3)
+	- When creating a map set the MODE (num layers, sizes etc..), look at the current width/height and number of layers
+
+[] Serialize asset metadata to Game Config
+	- Avoid relying on comment metadata. Also allows to load non-struct data
+
+[] Export settings to serialize data
+	- C Header: No structs, just raw array data
+	- BIN: raw byte array in c or asm format
+
+[] Backup game to temp dir on system load. Handle all crashes/exceptions, revert state to handle gracefully.
+
+[] RLE encoding/decoding. On tileset load, if RLE, set each tile inidivually. Otherwise, use DMA load
+
+[] Portal Spawning Try to add support for portal spawning as well as map blending
+
+[] Zone streaming support. 
+	- Can stream in Multiple Zones for a single tileset. 
+		Handle this by loading tiles and setting up the neighboring BG. 
+		Ping pong between BG1 and BG2 
+		If player is walking towards a new zone, overwrite screenblock of furthest zone's BGn, and adjust the scroll of BGn. 
+
+[] Support 4bpp image data: From Editor automatically build the 16 palettes, and tile palette index maps
+
+[] Create a game browser to install games from EdGBA_Games repo, or another endpoint like itch.io
+ 
+[] Handle Rect collisions
+
+[] UI Menu system
+
+[] Handle .S ASM compilation to supprot BIOS calls and interrupts
+
+[] NPC Editor
+	- Add scripts ( List of directions and animations, with timers)
+	- Dialog system
+
+[] World Editor 
+	- Used for portal, zone editting
+	- Maps will be rendered as tiles in the world. Zones can be streamed in. Setup spawn info for player
+
+[] Tile Toolkit
+	- Common Edit Tools that map and tiled image editor will use
+	- Create tile cursor
+		- temp tile drawn on top of current view
+	- Create a Stamp tool that allows to place large squares of the selected tile 
+	- Create a brush preset tool that allows users to stamp a prearranged tiles
+	- Line tool
+	- Fill tool
+	- Tile Selection hotkeys to quickly move selection rect
+	
+[] Image Editor Tab
+	- Simple interfacae to handle raw image data
+
+[] TiledImage Editor
+	- Create an editor for tilesets, spritesheets
+
+[] Object Editor
+	- Add shape and Sprite editor to the map. 	
+	- Rects will have shape IDs that are Macros into the maps rect array
+		- Customize the walk and scroll boundaries.
+	- Show/Hide layers
+
+[] World Editor
+	- Is a map graph and zone editor, uses maps as tiles
+	- Setup portals, zone transitions etc...
+	- If maps share a Map Mode and tilesets, then allow these to be preloaded with a zone transition icon
+	- Portals that can be setup to respawn player
+		- Add additional spawn info based on map connection   
+[] Editor Loading
