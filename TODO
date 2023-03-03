@@ -1,7 +1,5 @@
-[] Support multiple map layers.
-    - Layer editor that will blend
-    	- Maps will contain multiple pointers to tiles, that will be the layer data (tiles0, tiles1, tiles2, tiles3)
-	- When creating a map set the MODE (num layers, sizes etc..), look at the current width/height and number of layers
+[] Common EditContext
+	- Broadcast Asset change events for UI top handle (is. tilesetchange, maptile changed, tile brush size change, source file contents change, etc...)
 
 [] Serialize asset metadata to Game Config
 	- Avoid relying on comment metadata. Also allows to load non-struct data

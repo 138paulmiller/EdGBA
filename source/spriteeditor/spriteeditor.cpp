@@ -384,6 +384,9 @@ void SpriteEditor::syncLabels()
 
 void SpriteEditor::syncViews()
 {
+    sprite_view->invalidate();
+    spritesheet_view->invalidate();
+
     SpriteSheet* spritesheet = edit_context.getSpriteSheet();
     //sprite_anim->setSpriteSheet(spritesheet);
     if(spritesheet)

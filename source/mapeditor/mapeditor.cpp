@@ -635,7 +635,6 @@ void MapEditor::syncUI()
 void MapEditor::syncViews()
 {
     ui->map_tab->setEnabled(true);
-    setTileSize(edit_context.getSelectionSize());
 
     // Sync models
     Map* map = edit_context.getMap();
@@ -796,12 +795,14 @@ void MapEditor::on_mapTileClick(int tilex, int tiley)
         }
     }
 
+    ui->map_view->invalidate();
     main_window->markDirty();
 }
 
 void MapEditor::on_tilesetTileClick(int tilex, int tiley)
 {
     edit_context.handleTilesetTileClick(tilex, tiley);
+    ui->tileset_view->invalidateOverlay();
     refreshTilesetView();
 }
 
@@ -905,6 +906,8 @@ void MapEditor::on_toggleGrid()
 {
     ui->tileset_view->toggleGrid();
     ui->map_view->toggleGrid();
+    ui->tileset_view->invalidateOverlay();
+    ui->map_view->invalidateOverlay();
     refreshMapView();
     refreshTilesetView();
 }
@@ -912,6 +915,8 @@ void MapEditor::on_toggleGrid()
 void MapEditor::on_tileResize(int tile_size)
 {
     setTileSize(tile_size);
+    ui->tileset_view->invalidateOverlay();
+    ui->map_view->invalidateOverlay();
     refreshTilesetView();
     refreshMapView();
 }
@@ -943,6 +948,8 @@ void MapEditor::on_backgroundResize(QString value)
     int size_flag = Map::getBackgroundSizeFlag(value);
     if(size_flag != -1)
         edit_context.resizeSelectedBackground(size_flag);
+
+    ui->map_view->invalidateOverlay();
     syncUI();
 }
 
@@ -954,6 +961,7 @@ void MapEditor::on_backgroundPriorityChange(int priority)
         map->setPriority(bg_index, priority);
     }
 
+    ui->map_view->invalidate();
     // redraw
     syncUI();
 }
@@ -991,6 +999,8 @@ void MapEditor::on_tilesetSelectionChange(QString name)
     //TODO: Gracefully handle null maps
     Tileset* tileset = edit_context.findTileset(name);
     edit_context.setSelectedTileset(tileset);
+
+    ui->map_view->invalidate();
 
     syncUI();
     main_window->markDirty();
@@ -1049,6 +1059,7 @@ void MapEditor::on_tilesetLoad(bool /*enabled*/)
 
     edit_context.newTilesetFromImage(image_filename);
 
+    ui->map_view->invalidateOverlay();
     syncUI();
     main_window->markDirty();
 }
@@ -1074,6 +1085,8 @@ void MapEditor::on_tilesetAdd(bool)
 void MapEditor::on_tilesetRemove(bool)
 {
     edit_context.removeSelectedTileset();
+
+    ui->map_view->invalidateOverlay();
     syncUI();
     main_window->markDirty();
 }
@@ -1081,6 +1094,8 @@ void MapEditor::on_tilesetRemove(bool)
 void MapEditor::undo()
 {
     edit_context.undo();
+
+    ui->map_view->invalidateOverlay();
     syncUI();
     main_window->markDirty();
 }
@@ -1088,6 +1103,7 @@ void MapEditor::undo()
 void MapEditor::redo()
 {
     edit_context.redo();
+    ui->map_view->invalidateOverlay();
     syncUI();
     main_window->markDirty();
 }

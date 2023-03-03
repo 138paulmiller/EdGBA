@@ -209,12 +209,11 @@
     <property name="title">
      <string>Config</string>
     </property>
-    <addaction name="actionGBA_Clear_Color"/>
-    <addaction name="action_set_gba_emulator"/>
-    <addaction name="separator"/>
     <addaction name="action_toggle_dark_mode"/>
-    <addaction name="separator"/>
+    <addaction name="action_set_gba_emulator"/>
     <addaction name="action_build_settings"/>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>

@@ -6,17 +6,19 @@
 #include <QGraphicsView>
 #include <QThread>
 
-struct TiledImageDrawTask
+struct TileImageViewDrawProperties
 {
-    class TiledImageView* view;
-    QImage& image;
-};
+    TileImageViewDrawProperties();
 
-class TiledImageDrawThread : public QObject
-{
-    Q_OBJECT
-signals:
-    void finished();
+    float zoom;
+    QColor grid_color;
+    QColor text_fg_color;
+    QColor text_bg_color;
+    QColor highlight_color;
+    bool grid_enabled;
+    bool indices_enabled;
+    int grid_size_x, grid_size_y;
+    int cell_highlight_x, cell_highlight_y;
 };
 
 class TiledImageModel : public QObject
@@ -36,35 +38,40 @@ public:
     virtual void render(QImage& out_image);
 };
 
+
 class TiledImageView : public QGraphicsView
 {
     Q_OBJECT
 private:
-    TiledImageModel* model;
-    float zoom;
-    QPixmap cached_pixmap;
+    int source_width, source_height;
     QImage cached_image;
+    QImage cached_overlay;
 
-    QColor grid_color;
-    QColor text_fg_color;
-    QColor text_bg_color;
-    QColor highlight_color;
-    bool grid_enabled;
-    bool indices_enabled;
-    int grid_size_x, grid_size_y;
-    int cell_highlight_x, cell_highlight_y;
+    QPixmap cached_pixmap;
+
+    TiledImageModel* model;
+
+    TileImageViewDrawProperties properties;
     bool control_key;
 
 public:
     TiledImageView(QWidget* parent);
+    ~TiledImageView();
 
     void setModel(TiledImageModel* model);
     TiledImageModel* getModel();
 
     void clear();
-    void draw(const QImage& image, int x = 0, int y = 0);
     void redraw();
+    void invalidate();
+    void invalidateOverlay();
 
+private:
+    void draw(const QImage& image);
+
+    void render();
+    void renderOverlay();
+public:
     void getXY(QMouseEvent* event, int& x, int& y);
     void getCellXY(QMouseEvent* event, int& cellx, int& celly);
 
@@ -83,11 +90,11 @@ public:
     void clearCellHighlight();
     void setCellHighlight(int cellx, int celly);
 
-    // Begin QGraphicsView
+    // Begin QOpenGLWidget
     virtual void keyPressEvent(QKeyEvent *event) override;
     virtual void keyReleaseEvent(QKeyEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
-    // End QGraphicsView
+    // End QOpenGLWidget
 };
 
 #endif // TILEDIMAGEVIEW_H

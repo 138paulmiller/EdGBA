@@ -27,7 +27,10 @@ void SpriteModel::start(int msec)
         if(msec > 0)
             timer.start(msec);
         else
-            this->view->redraw();
+        {
+            view->invalidate();
+            view->redraw();
+        }
     }
 }
 
@@ -103,7 +106,8 @@ void SpriteModel::on_nextFrame()
     {
         frame = -1;
     }
-    this->view->redraw();
+    view->invalidate();
+    view->redraw();
 }
 
 SpriteView::SpriteView(QWidget* parent)

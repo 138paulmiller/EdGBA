@@ -83,6 +83,8 @@ MapView::MapView(QWidget* parent)
     , model( nullptr)
     , dragging(false)
 {
+
+    //setThreaded(true);
     QGraphicsScene* scene = new QGraphicsScene(parent);
     scene->setBackgroundBrush(Qt::transparent);
 
