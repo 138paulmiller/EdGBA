@@ -3,21 +3,19 @@
 
 #define LAYER_BG 0
 #define LAYER_UI 1
+#define LAYER_FG 2
 
 void scene_topdown_enter(SceneParams params);
 void scene_topdown_exit();
 void scene_topdown_input();
 void scene_topdown_update();
-void scene_topdown_draw();
-
 
 Scene scene_topdown =
 {
 	scene_topdown_enter,
 	scene_topdown_exit,
 	scene_topdown_input,
-	scene_topdown_update,
-	scene_topdown_draw
+	scene_topdown_update
 };
 
 SceneParams scene_params;
@@ -73,6 +71,7 @@ static void inline draw_map()
 	const short scroll_y = player_scroll_y();
 
 	map_set_scroll(LAYER_BG, scroll_x, scroll_y);
+	map_set_scroll(LAYER_FG, scroll_x, scroll_y);
 
 	sprite_update_all();
 }

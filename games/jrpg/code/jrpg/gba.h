@@ -18,9 +18,9 @@ Display Modes
 
     Mode:	BG0 	BG1 	BG2 	BG3
     -----------------------------------
-    0 		reg 	reg 	reg 	reg
-    1 		reg 	reg 	aff 	-
-    2 		- 		- 		aff 	aff 
+    0 	reg 	reg 	reg 	reg
+    1 	reg 	reg 	aff 	-
+    2 	- 	- 	aff 	aff 
 */
 #define GBA_MODE0 0x00
 #define GBA_MODE1 0x01
@@ -148,7 +148,7 @@ void gba_bg_palette(const ushort* palette_data);
 void gba_bg_image(uint char_block_n, const uchar* image_data, uint width, uint height);
 
 // Load background tile data into screen block n
-void gba_bg_tilemap(uint screen_block_n, const ushort* tilemap_data, uint width, uint height);
+void gba_bg_tilemap(uint screen_block_n, const uchar* tilemap_data, uint width, uint height);
 
 // Load background palette colors
 void gba_bg_get_scroll(uchar bg_index, short* scroll_x, short* scroll_y);

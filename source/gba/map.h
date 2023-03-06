@@ -103,6 +103,8 @@ public:
     void setTilesetName(int bg_index, QString name);
     QString getTilesetName(int bg_index);
 
+    bool getAffine(int bg_index) const;
+
     int getPriority(int bg_index);
     void setPriority(int bg_index, int priority);
 

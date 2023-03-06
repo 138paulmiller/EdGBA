@@ -3,7 +3,6 @@
 static Scene* current_scene = NULL;
 static Scene* pending_scene = NULL;
 static SceneParams  pending_params;
-static uint update_rate = 10;
 
 void scene_process()
 {

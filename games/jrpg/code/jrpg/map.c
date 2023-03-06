@@ -4,8 +4,8 @@ typedef struct BgState
 {
 	char char_block;
 	char screen_block;
-	const unsigned char* image_data;
-	const unsigned short* tile_data;
+	const uchar* image_data;
+	const uchar* tile_data;
 } BgState;
 
 BgState _bg_states[GBA_BG_COUNT];
@@ -102,12 +102,12 @@ inline void _set_image_data(short bg_index, const uchar* image_data)
 	_bg_states[bg_index].image_data = image_data;
 }
 
-inline const ushort* _get_tile_data(short bg_index)
+inline const uchar* _get_tile_data(short bg_index)
 {
 	return _bg_states[bg_index].tile_data;
 }
 
-inline void _set_tile_data(short bg_index, const ushort* tile_data)
+inline void _set_tile_data(short bg_index, const uchar* tile_data)
 {
 	_bg_states[bg_index].tile_data = tile_data;
 }
@@ -160,7 +160,7 @@ inline const Tileset* _get_tileset(short bg_index)
 	return NULL;
 }
 
-inline const ushort* _get_tiles(short bg_index)
+inline const uchar* _get_tiles(short bg_index)
 {
 	switch(bg_index)
 	{
@@ -290,10 +290,15 @@ void map_init(Map* map)
 			gba_bg_image(char_block_n, tileset->pixels, tileset->width, tileset->height);	   
 		
 		// Load the tilemap, if not already loaded
-		const ushort* tiles = _get_tiles(bg_index);
+		const uchar* tiles = _get_tiles(bg_index);
 		if(tiles != _get_tile_data(bg_index))
-			gba_bg_tilemap(screen_block_n, tiles, width, height);
-	
+		{
+			const ushort affine = _get_affine(_mode, bg_index);
+			if(!affine)
+				gba_bg_tilemap(screen_block_n, tiles, width * 2, height * 2);
+			else
+				gba_bg_tilemap(screen_block_n, tiles, width, height);
+		}
 		// Adjust to default scroll position
 		gba_bg_set_scroll(bg_index, scroll_x, scroll_y);
 
@@ -365,30 +370,15 @@ void map_get_scroll(short bg_index, short* scroll_x, short* scroll_y)
 	gba_bg_get_scroll(bg_index, scroll_x, scroll_y);
 }
 
+uchar map_affine(short bg_index) 
+{
+	return _get_affine(_mode, bg_index);
+}
+
 ushort map_tile(short bg_index, int x, int y) 
 {
-	if(!_is_enabled(bg_index))
-		return -1;
-
-	const ushort* tiles = _get_tiles(bg_index);
-	if(tiles == NULL)
-		return -1;
-
-	const ushort width = _get_width(bg_index);
-	const short scroll_x = _get_scroll_x(bg_index);
-	const short scroll_y = _get_scroll_y(bg_index);
-
-	//offset by scroll
-	x += scroll_x;
-	y += scroll_y;
-
-	// convert from screen coord to tile map index coord 
-	// each tile 8x8 so divide screen by 8 to get 1x1 index
-	x >>= 3;
-	y >>= 3;
-
-	// return the tile at the 2d->1d transformed index
-	return tiles[y * width + x];
+	// remove flip info
+ 	return *map_tiles(bg_index, x, y) & 0x00FF;
 }
 
 volatile ushort* map_tiles(short bg_index, int x, int y)
@@ -404,7 +394,7 @@ volatile ushort* map_tiles(short bg_index, int x, int y)
    	volatile ushort* screen_block = gba_screen_block(screen_block_n);
 
 	const int index = y * width + x;
-	return &screen_block[index];
+	return (ushort*)&screen_block[index];
 }
 
 ushort map_tile_count(short bg_index)

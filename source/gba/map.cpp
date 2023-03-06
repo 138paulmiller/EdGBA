@@ -136,13 +136,12 @@ void Background::resize(int new_size_flag)
 void Background::reset()
 {
     map = nullptr;
-    size_flag = 0;
     priority = 0;
     scroll_x = 0;
     scroll_y = 0;
     tileset = nullptr;
     bg_index = 0;
-    tiles.clear();
+    resize(0);
 }
 
 void Background::forEachTileIndex(std::function<void(int)> callback)
@@ -326,7 +325,7 @@ void Background::getStructFields(QList<QPair<CGen::Type, QString>>& out_fields) 
     out_fields.push_back(qMakePair(CGen::Type::CONST_CHAR,               prefix + QString("size_flag : 2")));
     out_fields.push_back(qMakePair(CGen::Type::CONST_SHORT,              prefix + QString("scroll_x")));
     out_fields.push_back(qMakePair(CGen::Type::CONST_SHORT,              prefix + QString("scroll_y")));
-    out_fields.push_back(qMakePair(CGen::Type::CONST_PTR_UNSIGNED_SHORT, prefix + QString("tiles")));
+    out_fields.push_back(qMakePair(CGen::Type::CONST_PTR_UNSIGNED_CHAR, prefix + QString("tiles")));
     out_fields.push_back(qMakePair(CGen::Type::CONST_STRUCT,             tileset_type + "* " + prefix + "tileset"));
 }
 
@@ -405,7 +404,7 @@ void Background::gatherAssets(Game* game)
 
 void Background::writeDecls(QTextStream& out)
 {
-    CGen::writeArrayDecl(out, CGen::CONST_UNSIGNED_SHORT, getTilesId());
+    CGen::writeArrayDecl(out, CGen::CONST_UNSIGNED_CHAR, getTilesId());
 }
 
 bool Background::readDecls(QTextStream& in)
@@ -418,7 +417,7 @@ void Background::writeData(QTextStream& out)
 {
     // Write tiles
     CGen::ArrayWriter array_writer(out);
-    array_writer.begin(CGen::CONST_UNSIGNED_SHORT, getTilesId() );
+    array_writer.begin(CGen::CONST_UNSIGNED_CHAR, getTilesId() );
 
     // Only write data if there is a tileset present. otherwise this data is unused
 
@@ -427,15 +426,26 @@ void Background::writeData(QTextStream& out)
         if(tile_index < tiles.size())
         {
             int tile = tiles[tile_index];
-            if(vflips[tile_index])
+
+            if(!Map::getBackgroundSizeFlagAffine(size_flag))
             {
-                tile |= (1 << GBA_TILE_VFLIP_BIT);
+                // write the tile and flip information
+                if(vflips[tile_index])
+                {
+                    tile |= (1 << GBA_TILE_VFLIP_BIT);
+                }
+                if(hflips[tile_index])
+                {
+                    tile |= (1 << GBA_TILE_HFLIP_BIT);
+                }
+
+                array_writer.writeValue(tile & 0x00FF);
+                array_writer.writeValue(tile >> 8);
             }
-            if(hflips[tile_index])
+            else
             {
-                tile |= (1 << GBA_TILE_HFLIP_BIT);
+                array_writer.writeValue(tile & 0x00FF);
             }
-            array_writer.writeValue(tile);
         }
     });
     array_writer.end();
@@ -447,30 +457,49 @@ bool Background::readData(QTextStream& in)
     CGen::ArrayReader array_reader(in);
 
     QString id;
-    if(!array_reader.begin(CGen::CONST_UNSIGNED_SHORT, id))
+    if(!array_reader.begin(CGen::CONST_UNSIGNED_CHAR, id))
     {
         return false;
     }
 
     forEachTileIndex([this, &array_reader](int tile_index)
-    {
-        bool success;
-        int tile = array_reader.readValue(success);
-        if(success && tile_index < tiles.size())
+    {        
+        if(!Map::getBackgroundSizeFlagAffine(size_flag))
         {
-            if(tile & (1 << GBA_TILE_VFLIP_BIT))
+            bool success;
+            int tile = array_reader.readValue(success);
+            if(success)
             {
-                tile &= ~(1 << GBA_TILE_VFLIP_BIT);
-                vflips[tile_index] = 1;
+                // write in flip info
+                tile |= array_reader.readValue(success) << 8;
             }
-            if(tile & (1 << GBA_TILE_HFLIP_BIT))
+            if(success && tile_index < tiles.size())
             {
-                tile &= ~(1 << GBA_TILE_HFLIP_BIT);
-                hflips[tile_index] = 1;
+                if(tile & (1 << GBA_TILE_VFLIP_BIT))
+                {
+                    tile &= ~(1 << GBA_TILE_VFLIP_BIT);
+                    vflips[tile_index] = 1;
+                }
+                if(tile & (1 << GBA_TILE_HFLIP_BIT))
+                {
+                    tile &= ~(1 << GBA_TILE_HFLIP_BIT);
+                    hflips[tile_index] = 1;
+                }
+
+                tiles[tile_index] = tile;
+            }
+        }
+        else
+        {
+            bool success;
+            int tile = array_reader.readValue(success);
+            if(success && tile_index < tiles.size())
+            {
+                tiles[tile_index] = tile;
             }
 
-            tiles[tile_index] = tile;
         }
+
     });
 
     return array_reader.end();
@@ -687,6 +716,16 @@ QString Map::getTilesetName(int bg_index)
         return tileset->getName();
     }
     return "";
+}
+
+bool Map::getAffine(int bg_index) const
+{
+    if(bg_index >= 0 && bg_index < GBA_BG_COUNT)
+    {
+        const Background& background = backgrounds[bg_index];
+        return Map::getBackgroundSizeFlagAffine(background.size_flag);
+    }
+    return false;
 }
 
 int Map::getPriority(int bg_index)

@@ -724,8 +724,8 @@ void MapEditor::syncLabels()
         // select new bg_size
         background_sizes = Map::getBackgroundSizeNames(mode, bg_index);
         background_size_label = edit_context.getBackgroundSizeName(bg_index);
-
     }
+
     background_sizes_model->setStringList(background_sizes);
     ui->background_sizes->setCurrentText(background_size_label);
 
@@ -744,6 +744,10 @@ void MapEditor::syncLabels()
     ui->background_priority->setValue(priority);
 
     // Flips
+    bool flip_enabled = !map->getAffine(bg_index);
+    ui->tile_hflip->setEnabled(flip_enabled);
+    ui->tile_vflip->setEnabled(flip_enabled);
+
     ui->tile_hflip->setChecked(edit_context.getSelectionHFlip());
     ui->tile_vflip->setChecked(edit_context.getSelectionVFlip());
 }
@@ -949,7 +953,7 @@ void MapEditor::on_backgroundResize(QString value)
     if(size_flag != -1)
         edit_context.resizeSelectedBackground(size_flag);
 
-    ui->map_view->invalidateOverlay();
+    ui->map_view->invalidate();
     syncUI();
 }
 

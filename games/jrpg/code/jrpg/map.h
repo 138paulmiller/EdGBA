@@ -20,6 +20,7 @@ void map_set_scroll(short bg_index, short scroll_x, short scroll_y);
 void map_get_scroll(short bg_index, short* scroll_x, short* scroll_y);
 
 //Current tiles on screen
+uchar map_affine(short bg_index);
 ushort map_tile(short bg_index, int x, int y);
 volatile ushort* map_tiles(short bg_index, int x, int y);
 ushort map_tile_count(short bg_index);

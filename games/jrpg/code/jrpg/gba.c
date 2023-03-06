@@ -109,6 +109,21 @@ Button state register
 #define BG3_SCROLL_Y (volatile short*) 0x400001e 
 
 /*
+Affine scrolls are fixed point arithmetic registers
+  Bit   Expl.
+  0-7   Fractional portion (8 bits)
+  8-26  Integer portion    (19 bits)
+  27    Sign               (1 bit)
+  28-31 Not used
+
+*/
+
+#define BG2_SCROLL_X_AFFINE (volatile int*) 0x4000028
+#define BG2_SCROLL_Y_AFFINE (volatile int*) 0x400002c
+#define BG3_SCROLL_X_AFFINE (volatile int*) 0x4000038
+#define BG3_SCROLL_Y_AFFINE (volatile int*) 0x400003c 
+
+/*
 	Palettes are used to store all colors used by an image
 	Background palette is at 05000000h 
  	Sprite palette is at 05000200h
@@ -384,18 +399,22 @@ void gba_wait_sec(uint sec, gba_callback callback)
 
 void gba_reset()
 {
-    *BG0_CONTROL = 0;
-    *BG1_CONTROL = 0;
-    *BG2_CONTROL = 0;
-    *BG3_CONTROL = 0;
-    *BG0_SCROLL_X = 0;
-    *BG1_SCROLL_X = 0;
-    *BG2_SCROLL_X = 0;
-    *BG3_SCROLL_X = 0;
-    *BG0_SCROLL_Y = 0;
-    *BG1_SCROLL_Y = 0;
-    *BG2_SCROLL_Y = 0;
-    *BG3_SCROLL_Y = 0; 
+	*BG0_CONTROL = 0;
+	*BG1_CONTROL = 0;
+	*BG2_CONTROL = 0;
+	*BG3_CONTROL = 0;
+	*BG0_SCROLL_X = 0;
+	*BG1_SCROLL_X = 0;
+	*BG2_SCROLL_X = 0;
+	*BG3_SCROLL_X = 0;
+	*BG0_SCROLL_Y = 0;
+	*BG1_SCROLL_Y = 0;
+	*BG2_SCROLL_Y = 0;
+	*BG3_SCROLL_Y = 0; 
+	*BG2_SCROLL_X_AFFINE = 0; 
+	*BG2_SCROLL_Y_AFFINE = 0; 
+	*BG3_SCROLL_X_AFFINE = 0; 
+	*BG3_SCROLL_Y_AFFINE = 0; 
 
 	ushort empty = 0;
 	for(int i = 0; i < GBA_CHAR_BLOCK_COUNT; ++i)
@@ -577,33 +596,57 @@ void gba_bg_palette(const ushort* palette_data)
 // Load background image data into char block n
 void gba_bg_image(uint char_block_n, const uchar* image_data, uint width, uint height)
 {
-    ushort* char_block = gba_char_block(char_block_n);
-    //divide by 2, Since we are transfer bytes, but the dma expects 16 bit values, we are counting 2 chars per short
+	ushort* char_block = gba_char_block(char_block_n);
+	//divide by 2, Since we are transfer bytes, but the dma expects 16 bit values, we are counting 2 chars per short
 	gba_copy16(char_block, (ushort*)image_data, (width * height) / 2);
 }
 
 // Load background image data into char block n
-void gba_bg_tilemap(uint screen_block_n, const ushort* tilemap_data, uint width, uint height)
+void gba_bg_tilemap(uint screen_block_n, const uchar* tilemap_data, uint width, uint height)
 {
-    ushort* screen_block = gba_screen_block(screen_block_n);
-	gba_copy16(screen_block, tilemap_data, width * height);
+	ushort* screen_block = gba_screen_block(screen_block_n);
+	//divide by 2, Since we are transfer bytes, but the dma expects 16 bit values, we are counting 2 chars per short
+	gba_copy16(screen_block, (ushort*)tilemap_data, width * height);
+}
+
+char gba_mode()
+{
+	return *DISPLAY_CONTROL & 0b11;
 }
 
 void gba_bg_get_scroll(uchar bg_index, short* scroll_x, short* scroll_y)
 {
 	switch(bg_index)
 	{
-		case 0: *scroll_x = *BG0_SCROLL_X; 
+		case 0: 	*scroll_x = *BG0_SCROLL_X; 
 				*scroll_y = *BG0_SCROLL_Y;
 				break;
-		case 1: *scroll_x = *BG1_SCROLL_X ; 
+		case 1: 	*scroll_x = *BG1_SCROLL_X; 
 				*scroll_y = *BG1_SCROLL_Y;
 				break;
-		case 2: *scroll_x = *BG2_SCROLL_X; 
-				*scroll_y = *BG2_SCROLL_Y;
+		case 2: 	
+				if(gba_mode() != GBA_MODE0)
+				{
+					*scroll_x = *BG2_SCROLL_X_AFFINE >> 8; 
+					*scroll_y = *BG2_SCROLL_Y_AFFINE >> 8;
+				} 
+				else
+				{
+					*scroll_x = *BG2_SCROLL_X; 
+					*scroll_y = *BG2_SCROLL_Y;
+				}
 				break;
-		case 3: *scroll_x = *BG3_SCROLL_X; 
-				*scroll_y = *BG3_SCROLL_Y;
+		case 3: 	
+				if(gba_mode() != GBA_MODE0)
+				{
+					*scroll_x = *BG3_SCROLL_X_AFFINE >> 8; 
+					*scroll_y = *BG3_SCROLL_Y_AFFINE >> 8;
+				} 
+				else
+				{
+					*scroll_x = *BG3_SCROLL_X; 
+					*scroll_y = *BG3_SCROLL_Y;
+				}
 				break;
     }
 }
@@ -612,17 +655,35 @@ void gba_bg_set_scroll(uchar bg_index, short scroll_x, short scroll_y)
 {
 	switch(bg_index)
 	{
-		case 0: *BG0_SCROLL_X = scroll_x; 
+		case 0: 	*BG0_SCROLL_X = scroll_x; 
 				*BG0_SCROLL_Y = scroll_y;
 				break;
-		case 1: *BG1_SCROLL_X = scroll_x; 
+		case 1: 	*BG1_SCROLL_X = scroll_x; 
 				*BG1_SCROLL_Y = scroll_y;
 				break;
-		case 2: *BG2_SCROLL_X = scroll_x; 
-				*BG2_SCROLL_Y = scroll_y;
+		case 2: 	
+				if(gba_mode() != GBA_MODE0)
+				{
+					*BG2_SCROLL_X_AFFINE = scroll_x << 8; 
+					*BG2_SCROLL_Y_AFFINE = scroll_y << 8;
+				} 
+				else
+				{
+					*BG2_SCROLL_X = scroll_x; 
+					*BG2_SCROLL_Y = scroll_y;
+				}
 				break;
-		case 3: *BG3_SCROLL_X = scroll_x; 
-				*BG3_SCROLL_Y = scroll_y;
+		case 3: 	
+				if(gba_mode() != GBA_MODE0)
+				{
+					*BG3_SCROLL_X_AFFINE = scroll_x << 8; 
+					*BG3_SCROLL_Y_AFFINE = scroll_y << 8;
+				} 
+				else
+				{
+					*BG3_SCROLL_X = scroll_x; 
+					*BG3_SCROLL_Y = scroll_y;
+				}
 				break;
     }
 }
@@ -631,17 +692,35 @@ void gba_bg_scroll_by(uchar bg_index, short offset_x, short offset_y)
 {
 	switch(bg_index)
 	{
-		case 0: *BG0_SCROLL_X += offset_x; 
+		case 0: 	*BG0_SCROLL_X += offset_x; 
 				*BG0_SCROLL_Y += offset_y;
 				break;
-		case 1: *BG1_SCROLL_X += offset_x; 
+		case 1: 	*BG1_SCROLL_X += offset_x; 
 				*BG1_SCROLL_Y += offset_y;
 				break;
-		case 2: *BG2_SCROLL_X += offset_x; 
-				*BG2_SCROLL_Y += offset_y;
+		case 2: 
+				if(gba_mode() != GBA_MODE0)
+				{
+					*BG2_SCROLL_X_AFFINE += offset_x << 8; 
+					*BG2_SCROLL_Y_AFFINE += offset_x << 8;
+				} 
+				else
+				{
+					*BG2_SCROLL_X += offset_x; 
+					*BG2_SCROLL_Y += offset_x;
+				}
 				break;
-		case 3: *BG3_SCROLL_X += offset_x; 
-				*BG3_SCROLL_Y += offset_y;
+		case 3: 
+				if(gba_mode() != GBA_MODE0)
+				{
+					*BG3_SCROLL_X_AFFINE += offset_x << 8; 
+					*BG3_SCROLL_Y_AFFINE += offset_x << 8;
+				} 
+				else
+				{
+					*BG3_SCROLL_X += offset_x; 
+					*BG3_SCROLL_Y += offset_x;
+				}
 				break;
     }
 }
