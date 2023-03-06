@@ -26,7 +26,7 @@ typedef struct Scene
 	SceneUpdateFunc update;
 } Scene;
 
+void scene_run(Scene* start_scene, SceneParams params);
 void scene_change(Scene* new_scene, SceneParams params);
-void scene_process();
 
 #endif //SCENE_H

@@ -28,6 +28,8 @@ static short scroll_min_x, scroll_min_y;
 static short scroll_max_x, scroll_max_y;
 static short walk_min_x, walk_min_y;
 static short walk_max_x, walk_max_y;
+static ushort sprite_x;
+static ushort sprite_y;
 
 void player_spawn(short x, short y)
 {
@@ -235,8 +237,8 @@ static void inline _update_scroll()
 
 static void inline _update_sprite()
 {
-	int sprite_x = GBA_SCREEN_WIDTH / 2;
-	int sprite_y = GBA_SCREEN_HEIGHT / 2;
+	sprite_x = GBA_SCREEN_WIDTH / 2;
+	sprite_y = GBA_SCREEN_HEIGHT / 2;
 
 	const int sprite_offset_x = player.x - GBA_SCREEN_WIDTH / 2;
 	const int sprite_offset_y = player.y - GBA_SCREEN_HEIGHT / 2;

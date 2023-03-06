@@ -7,7 +7,7 @@ static uint update_rate = 10;
 
 void scene_process()
 {
-	gba_vsync();
+	//gba_vsync();
 	// TODO: use interupts for handle vsync and input
 	if(pending_scene != NULL)
 	{
@@ -25,13 +25,22 @@ void scene_process()
 	current_scene->update();
 }
 
+void scene_run(Scene* new_scene, SceneParams params)
+{
+	current_scene = new_scene;
+	current_scene->enter(params);
+
+	//gba_vblank_callback(&scene_process);
+	while(1)
+	{
+		gba_vsync();
+		scene_process();
+		// TODO: support for additional scene processing here
+	}
+}
+
 void scene_change(Scene* new_scene, SceneParams params)
 {
 	pending_scene = new_scene;
 	pending_params = params;
-}
-
-void scene_set_update_rate(uint cycles)
-{
-	update_rate = cycles;
 }

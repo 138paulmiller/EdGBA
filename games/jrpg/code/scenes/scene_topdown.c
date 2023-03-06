@@ -8,6 +8,7 @@ void scene_topdown_enter(SceneParams params);
 void scene_topdown_exit();
 void scene_topdown_input();
 void scene_topdown_update();
+void scene_topdown_draw();
 
 
 Scene scene_topdown =
@@ -15,7 +16,8 @@ Scene scene_topdown =
 	scene_topdown_enter,
 	scene_topdown_exit,
 	scene_topdown_input,
-	scene_topdown_update
+	scene_topdown_update,
+	scene_topdown_draw
 };
 
 SceneParams scene_params;
@@ -37,7 +39,6 @@ void scene_topdown_enter(SceneParams params)
 	// setup sprites
 	gba_obj_reset_all();
 	sprite_sheet_init(params.spritesheet);
-
 
 	player_spawn(params.portal_x, params.portal_y);
 	player_init_anim(PLAYER_IDLE_DOWN, &Anim_PlayerDown);
@@ -66,7 +67,7 @@ void scene_topdown_exit()
 {
 }
 
-static void inline update_map()
+static void inline draw_map()
 {
 	const short scroll_x = player_scroll_x();
 	const short scroll_y = player_scroll_y();
@@ -76,7 +77,7 @@ static void inline update_map()
 	sprite_update_all();
 }
 
-static void update_debug()
+static void draw_debug()
 {
 	char* msg = debug_log;
 	msg += sprintf(msg, "xy:%d %d\n", player_x(), player_y());
@@ -113,6 +114,6 @@ void scene_topdown_update()
 {
 	player_update();
 
-	update_map();
-	update_debug();
+	draw_map();
+	draw_debug();
 }

@@ -180,9 +180,7 @@ OBJ Attribute 2 (Read/Write)
 */
 #define FRONT_BUFFER ((volatile ushort*)  0x06000000)
 #define BACK_BUFFER ((volatile ushort*)   0x0600A000)
-
 volatile ushort* active_buffer = FRONT_BUFFER;
-
 
 // The color palette used in graphics Mode 4
 #define palette = (volatile ushort*) 0x5000000;
@@ -243,18 +241,15 @@ Size - the amount of data to be transfered
 #define TIMER_CASCADE 0x4	//Increments timer when preceding timer overflows
 #define TIMER_ENABLE 0x0080	// Enable timer
 
-#define TIMER0			((volatile ushort*)0x04000100)
+#define TIMER0		((volatile ushort*)0x04000100)
 #define TIMER0_CONTROL	((volatile ushort*)0x04000102)	
-#define TIMER1			((volatile ushort*)0x04000104)	
+#define TIMER1		((volatile ushort*)0x04000104)	
 #define TIMER1_CONTROL	((volatile ushort*)0x04000106)
-#define TIMER2			((volatile ushort*)0x04000108)
+#define TIMER2		((volatile ushort*)0x04000108)
 #define TIMER2_CONTROL	((volatile ushort*)0x0400010A)
-#define TIMER3			((volatile ushort*)0x0400010C)
+#define TIMER3		((volatile ushort*)0x0400010C)
 #define TIMER3_CONTROL	((volatile ushort*)0x0400010E)
 
-// Software interrupt calls. See docs for list of Software Interrupt List
-//#define swi_call(x)  asm volatile("swi\t"#x"<<16" ::: "r0", "r1", "r2", "r3")
-#define swi_call(x)  asm volatile("swi\t"#x ::: "r0", "r1", "r2", "r3")
 
 void gba_init(uchar mode, uchar sprite_2d)
 {
@@ -278,20 +273,67 @@ void gba_init(uchar mode, uchar sprite_2d)
     }
 	
 	if(sprite_2d > 0)
-	    *DISPLAY_CONTROL |= SPRITE_ENABLE | SPRITE_MAP_2D;
+		*DISPLAY_CONTROL |= SPRITE_ENABLE | SPRITE_MAP_2D;
 	else
 		*DISPLAY_CONTROL |= SPRITE_ENABLE | SPRITE_MAP_1D;
+
+}
+
+/* the global interrupt enable register */
+volatile ushort* INTERRUPT_ENABLE = (volatile ushort*) 0x4000208;
+
+/* this register stores the individual interrupts we want */
+#define INTERRUPT_SELECTION ((volatile ushort*) 0x4000200)
+
+/* this registers stores which interrupts if any occured */
+volatile ushort* INTERRUPT_STATE = (volatile ushort*) 0x4000202;
+
+/* the address of the function to call when an interrupt occurs */
+volatile uint* INTERRUPT_CALLBACK = (volatile uint*) 0x3007FFC;
+
+/* this register needs a bit set to tell the hardware to send the vblank interrupt */
+volatile ushort* display_interrupts = (volatile ushort*) 0x4000004;
+
+/* the interrupts are identified by number, we only care about this one */
+#define INTERRUPT_FLAG_VBLANK 0x1
+
+void gba_dummy_callback(){}
+
+static gba_callback vblank_callback = &gba_dummy_callback;
+
+static void internal_gba_vblank_callback()
+{
+	// disable interrupts
+	*INTERRUPT_ENABLE = 0;
+	// save state
+	ushort interrupt_state = *INTERRUPT_STATE;
+	
+	vblank_callback();
+
+	// enable interrupts
+	*INTERRUPT_ENABLE = 1;	
+	// restore state
+	*INTERRUPT_STATE = interrupt_state;
+}
+
+void gba_vblank_callback(gba_callback on_vblank)
+{
+	vblank_callback = on_vblank;
+
+
+	*INTERRUPT_ENABLE = 0;
+	*INTERRUPT_CALLBACK = (unsigned int) &internal_gba_vblank_callback;
+	*INTERRUPT_SELECTION |= INTERRUPT_FLAG_VBLANK;
+	*display_interrupts |= 0x08;
+	*INTERRUPT_ENABLE = 1;
 }
 
 // wait for the screen to be in vblank
 void gba_vsync( ) 
 {
-    /* wait until all 160 vram lines have been updated */	
 	while (*SCAN_VCOUNT >= 160) {}
 	while (*SCAN_VCOUNT < 160) {}
-	//swi_call(0x05);
 }
-
 
 void gba_wait(uint cycles, gba_callback callback)
 {
@@ -307,7 +349,7 @@ void gba_wait(uint cycles, gba_callback callback)
 		counter_cycles++;
         	if(counter_cycles >= cycles)
         	{
-            		return;
+			return;
         	}
         	*TIMER2= -0x3000;          // 0x3000 ticks till overflow
         	*TIMER2_CONTROL = TIMER_ENABLE | TIMER_FREQ_1024;
@@ -333,9 +375,9 @@ void gba_wait_sec(uint sec, gba_callback callback)
 			{
 				return;
 			}
-           	*TIMER2= -0x3000;          // 0x3000 ticks till overflow
+			*TIMER2= -0x3000;          // 0x3000 ticks till overflow
 			*TIMER2_CONTROL = TIMER_ENABLE | TIMER_FREQ_1024;
-	        *TIMER3_CONTROL = TIMER_ENABLE | TIMER_CASCADE;
+			*TIMER3_CONTROL = TIMER_ENABLE | TIMER_CASCADE;
 		}
 	}
 }

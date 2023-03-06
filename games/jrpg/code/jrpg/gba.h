@@ -102,9 +102,10 @@ void gba_init(uchar mode, uchar sprite_2d);
 // Reset VRAM and controls
 void gba_reset();
 
+// called on a vblank interrupt
+void gba_vblank_callback(gba_callback on_vblank);
+
 // wait for the screen to be in vblank
-
-
 void gba_vsync();
 void gba_wait(uint cycles, gba_callback callback);
 void gba_wait_sec(uint sec, gba_callback callback);

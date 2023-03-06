@@ -1,13 +1,14 @@
 #ifndef CODEVIEW_H
 #define CODEVIEW_H
 
-#include <QWidget>
+#include <QThread>
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QRegularExpression>
 
 class CodeView;
+
 class CodeViewGutter : public QWidget
 {
 public:

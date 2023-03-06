@@ -17,8 +17,10 @@ struct SyntaxConfig
     bool is_bold = false;
 };
 
+// TODO: build a user keywords pattern for any typedefs in the game code
+const int tab_width = 4;
 static const char* keywords_pattern =
-    "(#define|#include|#if|#ifdef|#ifndef|#else|#elif|#end)|\\b(auto|break|case|char|const|continue|default|do|double|else|enum|extern|float|for|goto|if|inline|int|long|register|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while)\\b"
+    "(#define|#include|#ifdef|#ifndef|#if|#else|#elif|#end)|\\b(auto|break|case|char|const|continue|default|do|double|else|enum|extern|float|for|goto|if|inline|int|long|register|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while)\\b"
 ;
 
 static QMap<QString, SyntaxConfig>& getSyntaxConfig()
@@ -73,7 +75,8 @@ CodeHighlighter::CodeHighlighter(CodeView* code_view, QTextDocument *parent)
 void CodeHighlighter::reset()
 {
     highlight_rules.clear();
-    foreach(const QString& id, getSyntaxConfig().keys())
+    const QList<QString>& syntax_keys = getSyntaxConfig().keys();
+    foreach(const QString& id, syntax_keys)
     {
         SyntaxConfig config = getSyntaxConfig()[id];
         HighlightingRule rule;
@@ -84,16 +87,16 @@ void CodeHighlighter::reset()
         rule.format = format;
         highlight_rules.append(rule);
     }
-    multiline_comment_format.setForeground(getSyntaxConfig()["1_comment"].color);
+    multiline_comment_format.setForeground(getSyntaxConfig()["6_comment"].color);
     comment_start_expression = QRegularExpression(QStringLiteral("/\\*"));
     comment_end_expression = QRegularExpression(QStringLiteral("\\*/"));
 }
 
 void CodeHighlighter::highlightBlock(const QString &text)
 {
-    if(code_view->visibleRegion().isEmpty()) return;
+    //if(code_view->visibleRegion().isEmpty()) return;
 
-    for (const HighlightingRule &rule : qAsConst(highlight_rules))
+    foreach(const HighlightingRule &rule, highlight_rules)
     {
         QRegularExpressionMatchIterator it = rule.pattern.globalMatch(text);
         while (it.hasNext())
@@ -131,6 +134,7 @@ void CodeHighlighter::highlightBlock(const QString &text)
 }
 
 // ---------------------------- Code View --------------------------------//
+
 CodeView::CodeView(QWidget *parent)
     : QPlainTextEdit(parent)
     , gutter(new CodeViewGutter(this))
@@ -225,11 +229,10 @@ void CodeView::highlightCurrentLine()
 
 void CodeView::setupFont()
 {
-    QFont f("Monospace");
-    //f.setStyleHint(QFont::Monospace);
-    //f.setStyleHint(QFont::SansSerif);
-    setFont(f);
-    setTabStopWidth(QFontMetricsF(font()).averageCharWidth() * 4);
+    QFont font("Monospace");
+    font.setStyleHint(QFont::TypeWriter);
+    setFont(font);
+    setTabStopWidth(QFontMetricsF(font).averageCharWidth() * tab_width);
 }
 
 void CodeView::gutterPaintEvent(QPaintEvent *event)

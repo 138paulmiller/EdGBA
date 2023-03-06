@@ -15,9 +15,5 @@ int main(int argc, char** argv )
 		128, 128
 	};
 
-	scene_change(&SCENE_ENTRY, scene_default_params);
-	while(1)
-	{
-		scene_process();
-	}
+	scene_run(&SCENE_ENTRY, scene_default_params);
 }
