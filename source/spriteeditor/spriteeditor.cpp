@@ -223,10 +223,20 @@ void SpriteEditor::redo()
 {}
 
 void SpriteEditor::zoomIn()
-{}
+{
+    ui->sprite_view->zoomBy(1);
+    ui->spritesheet_view->zoomBy(1);
+    ui->sprite_view->redraw();
+    spritesheet_view->redraw();
+}
 
 void SpriteEditor::zoomOut()
-{}
+{
+    ui->sprite_view->zoomBy(-1);
+    ui->spritesheet_view->zoomBy(-1);
+    ui->sprite_view->redraw();
+    spritesheet_view->redraw();
+}
 
 void SpriteEditor::on_toggleGrid()
 {
