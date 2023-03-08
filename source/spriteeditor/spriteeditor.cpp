@@ -9,207 +9,9 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
-SpriteEditorContext::SpriteEditorContext()
-{
-    reset();
-}
-
-void SpriteEditorContext::reset()
-{
-    game = nullptr;
-    spritesheet = nullptr;
-    spriteanim = nullptr;
-}
-
-void SpriteEditorContext::setGame(Game* new_game)
-{
-    game = new_game;
-    if(game == nullptr)
-    {
-        spritesheet = nullptr;
-        spriteanim = nullptr;
-        return;
-    }
-
-    QList<SpriteSheet*> spritesheets = game->getAssets<SpriteSheet>();
-    if(spritesheets.size())
-    {
-        setSpriteSheet(spritesheets[0]);
-    }
-
-    QList<SpriteAnim*> spriteanims  = game->getAssets<SpriteAnim>();
-    if(spriteanims.size())
-    {
-        setSpriteAnim(spriteanims[0]);
-    }
-}
-
-bool SpriteEditorContext::newSpriteSheet()
-{
-    SpriteSheet* spritesheet = game->addAsset<SpriteSheet>();
-    setSpriteSheet(spritesheet);
-    return getSpriteSheet() != nullptr;
-}
-
-bool SpriteEditorContext::newSpriteSheetFromImage(QString image_filename)
-{
-    if(image_filename.isNull() || image_filename.isEmpty())
-    {
-        return false;
-    }
-
-    QImage image;
-    if(!image.load(image_filename))
-    {
-        //TODO: Warn user of failure
-        return false;
-    }
-
-
-    if(image.height() * image.width() > GBA_TILESET_MAX_SIZE)
-    {
-        QString msg = "SpriteSheets are limited to " + QString::number(GBA_TILE_MAX) + " 8x8 tiles.\nThe max file dimension is "  + QString::number(GBA_TILESET_WIDTH) + "x" + QString::number(GBA_TILESET_HEIGHT);
-        qDebug() << "[EdGBA] Image is too large!" << msg;
-
-        QMessageBox msgBox;
-        msgBox.setWindowTitle(EDGBA_TITLE);
-        msgBox.setText("SpriteSheet too large!");
-        msgBox.setInformativeText(msg);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.setDefaultButton(QMessageBox::Ok);
-        msgBox.exec();
-    }
-
-    bool rename = false;
-    SpriteSheet* spritesheet = getSpriteSheet();
-    if(spritesheet == nullptr)
-    {
-        rename = true;
-        spritesheet = game->addAsset<SpriteSheet>();
-    }
-
-    if(spritesheet->loadFromImage(image))
-    {
-        if(rename)
-        {
-            QFileInfo fileInfo(image_filename);
-            spritesheet->setName(fileInfo.baseName());
-        }
-
-        setSpriteSheet(spritesheet);
-        game->rebuildPalettes();
-
-        return true;
-    }
-    return false;
-}
-
-
-bool SpriteEditorContext::removeSpriteSheet()
-{
-    game->removeAsset<SpriteSheet>(spritesheet);
-
-    SpriteSheet* spritesheet = nullptr;
-    QList<SpriteSheet*> spritesheets = game->getAssets<SpriteSheet>();
-    if(spritesheets.size())
-    {
-        spritesheet = spritesheets[0];
-    }
-    setSpriteSheet(spritesheet);
-    return true;
-}
-
-void SpriteEditorContext::setSpriteSheet(SpriteSheet* new_spritesheet)
-{
-    spritesheet = new_spritesheet;
-}
-
-SpriteSheet* SpriteEditorContext::findSpriteSheet(const QString& name)
-{
-    return game->findAsset<SpriteSheet>(name);
-}
-
-SpriteSheet* SpriteEditorContext::getSpriteSheet()
-{
-    return spritesheet;
-}
-
-void SpriteEditorContext::getSpriteSheetNames(QStringList& names) const
-{
-    foreach(SpriteSheet* spritesheet, game->getAssets<SpriteSheet>())
-    {
-        if(spritesheet)
-        {
-            names << spritesheet->getName();
-        }
-    }
-}
-
-bool SpriteEditorContext::newSpriteAnim()
-{
-    SpriteAnim* spriteanim = game->addAsset<SpriteAnim>();
-    setSpriteAnim(spriteanim);
-    return getSpriteAnim() != nullptr;
-}
-
-bool SpriteEditorContext::removeSpriteAnim()
-{
-    game->removeAsset<SpriteAnim>(spriteanim);
-
-    SpriteAnim* spriteanim = nullptr;
-    QList<SpriteAnim*> spriteanims = game->getAssets<SpriteAnim>();
-    if(spriteanims.size())
-    {
-        spriteanim = spriteanims[0];
-    }
-    setSpriteAnim(spriteanim);
-    return true;
-}
-
-SpriteAnim* SpriteEditorContext::getSpriteAnim()
-{
-    return spriteanim;
-}
-
-void SpriteEditorContext::setSpriteAnim(SpriteAnim* spriteanim)
-{
-    this->spriteanim = spriteanim;
-}
-
-void SpriteEditorContext::getSpriteAnimNames(QStringList& names) const
-{
-    foreach(SpriteAnim* spriteanim, game->getAssets<SpriteAnim>())
-    {
-        if(spriteanim)
-        {
-            names << spriteanim->getName();
-        }
-    }
-}
-
-SpriteAnim* SpriteEditorContext::findSpriteAnim(const QString& name)
-{
-    return game->findAsset<SpriteAnim>(name);
-}
-
-void SpriteEditorContext::setSpriteSheetSize(int size_index)
-{
-    if(spritesheet)
-    {
-        QVector<int> sprite_size_flags = SpriteSheet::getSpriteSizeFlags();
-        if(size_index >= 0 && size_index < sprite_size_flags.size())
-        {
-            spritesheet->setSpriteSize(sprite_size_flags[size_index]);
-        }
-    }
-}
-
-
-// -----------------------------------------------------------------------------------------------
-
-SpriteEditor::SpriteEditor(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui_SpriteEditor)
+SpriteEditor::SpriteEditor(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui_SpriteEditor)
 {
     grid_color = QColor(255,0,0);
     frame_time_msec = 1000;
@@ -290,7 +92,6 @@ void SpriteEditor::setup(MainWindow* window)
 void SpriteEditor::reset()
 {
     skip_sync = false;
-    edit_context.reset();
     sprite_model->setSpriteSheet(nullptr);
     spritesheet_model->setSpriteSheet(nullptr);
 }
@@ -298,7 +99,6 @@ void SpriteEditor::reset()
 void SpriteEditor::reload()
 {
     skip_sync = false;
-    edit_context.setGame(EditorInterface::game());
     syncUI();
 }
 
@@ -318,12 +118,12 @@ void SpriteEditor::syncUI()
 void SpriteEditor::syncLabels()
 {
     // Grab previous data. Reseting the asset name models clear the values
-    SpriteSheet* spritesheet = edit_context.getSpriteSheet();
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteSheet* spritesheet = edit_context->getSpriteSheet();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
 
     // Sync Sprite sheet combo
     QStringList spritesheet_names;
-    edit_context.getSpriteSheetNames(spritesheet_names);
+    edit_context->getSpriteSheetNames(spritesheet_names);
     spritesheet_names_model->setStringList(spritesheet_names);
 
     if(spritesheet)
@@ -337,7 +137,7 @@ void SpriteEditor::syncLabels()
 
     // Sync Anim combo
     QStringList spriteanim_names;
-    edit_context.getSpriteAnimNames(spriteanim_names);
+    edit_context->getSpriteAnimNames(spriteanim_names);
     spriteanim_names_model->setStringList(spriteanim_names);
 
     if(spriteanim)
@@ -387,7 +187,7 @@ void SpriteEditor::syncViews()
     sprite_view->invalidate();
     spritesheet_view->invalidate();
 
-    SpriteSheet* spritesheet = edit_context.getSpriteSheet();
+    SpriteSheet* spritesheet = edit_context->getSpriteSheet();
     //sprite_anim->setSpriteSheet(spritesheet);
     if(spritesheet)
     {
@@ -397,7 +197,7 @@ void SpriteEditor::syncViews()
     // Sync models
 
     // Sprite view update
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim)
     {
         int frame_duration = spriteanim->getFrameDuration();
@@ -438,14 +238,14 @@ void SpriteEditor::on_toggleGrid()
 
 void SpriteEditor::on_spriteSheetAdd(bool /*enabled*/)
 {
-    edit_context.newSpriteSheet();
+    edit_context->newSpriteSheet();
     syncUI();
     main_window->markDirty();
 }
 
 void SpriteEditor::on_spriteSheetRemove(bool /*enabled*/)
 {
-    edit_context.removeSpriteSheet();
+    edit_context->removeSpriteSheet();
     syncUI();
     main_window->markDirty();
 }
@@ -457,8 +257,8 @@ void SpriteEditor::on_spriteSheetSelectionChange(QString name)
         return; //currently being editted
     }
     //TODO: Gracefully handle null maps
-    SpriteSheet* spritesheet = edit_context.findSpriteSheet(name);
-    edit_context.setSpriteSheet(spritesheet);
+    SpriteSheet* spritesheet = edit_context->findSpriteSheet(name);
+    edit_context->setSpriteSheet(spritesheet);
 
     syncUI();
     main_window->markDirty();
@@ -466,7 +266,7 @@ void SpriteEditor::on_spriteSheetSelectionChange(QString name)
 
 void SpriteEditor::on_spriteSheetEditName(bool /*enabled*/)
 {
-    SpriteSheet* spritesheet = edit_context.getSpriteSheet();
+    SpriteSheet* spritesheet = edit_context->getSpriteSheet();
     if(spritesheet == nullptr)
     {
         return;
@@ -480,7 +280,7 @@ void SpriteEditor::on_spriteSheetEditName(bool /*enabled*/)
     {
         QString name = editname_dialog->getName();
         spritesheet->setName(name);
-        edit_context.setSpriteSheet(spritesheet);
+        edit_context->setSpriteSheet(spritesheet);
 
         syncLabels();
         main_window->markDirty();
@@ -493,7 +293,7 @@ void SpriteEditor::on_spriteSheetEditName(bool /*enabled*/)
 void SpriteEditor::on_spriteSheetCheckName(QString name, bool& ok)
 {
     QStringList names;
-    edit_context.getSpriteSheetNames(names);
+    edit_context->getSpriteSheetNames(names);
     ok = !names.contains(name);
 
     QString base = name;
@@ -512,7 +312,7 @@ void SpriteEditor::on_spriteSheetCheckName(QString name, bool& ok)
 
 void SpriteEditor::on_spriteSheetSizeChanged(int index)
 {
-    edit_context.setSpriteSheetSize(index);
+    edit_context->setSpriteSheetSize(index);
     syncUI();
     main_window->markDirty();
 }
@@ -521,7 +321,7 @@ void SpriteEditor::on_spriteSheetLoad(bool /*enabled*/)
 {
     QString image_filename = QFileDialog::getOpenFileName(this, tr("Load SpriteSheet Image"), "", tr("Image Files (*.png)"));
 
-    edit_context.newSpriteSheetFromImage(image_filename);
+    edit_context->newSpriteSheetFromImage(image_filename);
 
     syncUI();
     main_window->markDirty();
@@ -529,14 +329,14 @@ void SpriteEditor::on_spriteSheetLoad(bool /*enabled*/)
 
 void SpriteEditor::on_spriteAnimAdd(bool /*enabled*/)
 {
-    edit_context.newSpriteAnim();
+    edit_context->newSpriteAnim();
     syncUI();
     main_window->markDirty();
 }
 
 void SpriteEditor::on_spriteAnimRemove(bool /*enabled*/)
 {
-    edit_context.removeSpriteAnim();
+    edit_context->removeSpriteAnim();
     syncUI();
     main_window->markDirty();
 }
@@ -548,8 +348,8 @@ void SpriteEditor::on_spriteAnimSelectionChange(QString name)
         return; //currently being editted
     }
 
-    SpriteAnim* spriteanim = edit_context.findSpriteAnim(name);
-    edit_context.setSpriteAnim(spriteanim);
+    SpriteAnim* spriteanim = edit_context->findSpriteAnim(name);
+    edit_context->setSpriteAnim(spriteanim);
 
     syncUI();
     main_window->markDirty();
@@ -557,7 +357,7 @@ void SpriteEditor::on_spriteAnimSelectionChange(QString name)
 
 void SpriteEditor::on_spriteAnimEditName(bool /*enabled*/)
 {
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim == nullptr)
     {
         return;
@@ -571,7 +371,7 @@ void SpriteEditor::on_spriteAnimEditName(bool /*enabled*/)
     {
         QString name = editname_dialog->getName();
         spriteanim->setName(name);
-        edit_context.setSpriteAnim(spriteanim);
+        edit_context->setSpriteAnim(spriteanim);
 
         syncLabels();
         main_window->markDirty();
@@ -584,7 +384,7 @@ void SpriteEditor::on_spriteAnimEditName(bool /*enabled*/)
 void SpriteEditor::on_spriteAnimCheckName(QString name, bool& ok)
 {
     QStringList names;
-    edit_context.getSpriteAnimNames(names);
+    edit_context->getSpriteAnimNames(names);
     ok = !names.contains(name);
 
     QString base = name;
@@ -620,7 +420,7 @@ void SpriteEditor::on_animationFramesChanged(QString anim_frames_text)
         }
     }
 
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim)
     {
         spriteanim->setFrames(frames);
@@ -634,7 +434,7 @@ void SpriteEditor::on_animationFramesCommit()
 
 void SpriteEditor::on_animationFrameSpeedChange(int value)
 {
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim)
     {
         spriteanim->setFrameDuration(value);
@@ -645,7 +445,7 @@ void SpriteEditor::on_animationFrameSpeedChange(int value)
 
 void SpriteEditor::on_animationHFlipChange(bool value)
 {
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim)
     {
         spriteanim->setHFlip(value);
@@ -657,7 +457,7 @@ void SpriteEditor::on_animationHFlipChange(bool value)
 
 void SpriteEditor::on_animationVFlipChange(bool value)
 {
-    SpriteAnim* spriteanim = edit_context.getSpriteAnim();
+    SpriteAnim* spriteanim = edit_context->getSpriteAnim();
     if(spriteanim)
     {
         spriteanim->setVFlip(value);

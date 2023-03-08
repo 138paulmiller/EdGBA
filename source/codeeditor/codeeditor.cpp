@@ -26,7 +26,6 @@ CodeEditor::CodeEditor(QWidget *parent)
     watcher = nullptr;
     source_file = nullptr;
     newname_dialog = nullptr;
-    reset();
 }
 
 CodeEditor::~CodeEditor()
@@ -37,6 +36,8 @@ CodeEditor::~CodeEditor()
 
 void CodeEditor::setup(MainWindow* window)
 {   
+    reset();
+
     main_window = window;
     code_view = ui->code_view;
     font = QFont(code_view->fontInfo().family(), code_view->fontInfo().pixelSize());
@@ -70,7 +71,7 @@ void CodeEditor::setup(MainWindow* window)
 
 void CodeEditor::reset()
 {
-    if(Game* game = EditorInterface::game())
+    if(Game* game = edit_context->getGame())
     {
         selected_path = game->getAbsoluteCodePath();
     }
@@ -100,7 +101,7 @@ void CodeEditor::reload()
     }
     source_file = nullptr;
 
-    Game* game = EditorInterface::game();
+    Game* game = edit_context->getGame();
     if(game == nullptr || code_view == nullptr || source_files_view == nullptr)
     {
         return;
@@ -175,7 +176,7 @@ void CodeEditor::zoomOut()
 
 void CodeEditor::makeUniqueFilePath(QString& file_path)
 {
-    Game* game = EditorInterface::game();
+    Game* game = edit_context->getGame();
     if(game == nullptr)
     {
         return;
@@ -197,7 +198,7 @@ void CodeEditor::makeUniqueFilePath(QString& file_path)
 
 void CodeEditor::changeSourceFile(const QString &file_path)
 {
-    Game* game = EditorInterface::game();
+    Game* game = edit_context->getGame();
     if(game == nullptr)
     {
         return;
@@ -307,7 +308,7 @@ void CodeEditor::on_sourceFileRemove()
 {
     QFile file(QFileInfo(selected_path).absoluteFilePath());
     file.remove();
-    if(Game* game = EditorInterface::game())
+    if(Game* game = edit_context->getGame())
     {
         selected_path = game->getAbsoluteCodePath();
     }
@@ -328,8 +329,7 @@ void CodeEditor::on_sourceFileRename()
     }
     else
     {
-        Game* game = EditorInterface::game();
-        if(game )
+        if(Game* game = edit_context->getGame())
         {
             game->reloadSourceFiles();
         }
@@ -349,7 +349,7 @@ void CodeEditor::on_sourceFolderRemove()
 {
     QDir dir(QFileInfo(selected_path ).absoluteFilePath());
     dir.removeRecursively();
-    if(Game* game = EditorInterface::game())
+    if(Game* game = edit_context->getGame())
     {
         selected_path = game->getAbsoluteCodePath();
     }
@@ -369,8 +369,7 @@ void CodeEditor::on_sourceFolderRename()
     }
     else
     {
-        Game* game = EditorInterface::game();
-        if(game )
+        if(Game* game = edit_context->getGame())
         {
             game->reloadSourceFiles();
         }
@@ -385,23 +384,16 @@ void CodeEditor::on_sourceFileSelect(QModelIndex index)
 
     if(selected_path.size() == 0)
     {
-        Game* game = EditorInterface::game();
-        if(game)
+        if(Game* game = edit_context->getGame())
             selected_path = game->getAbsoluteCodePath();
     }
 }
 
 void CodeEditor::on_sourceFileLoad(QModelIndex index)
 {
-    Game* game = EditorInterface::game();
-    if(game == nullptr)
-    {
-        return;
-    }
-
     QString new_loaded_path = filesystem_model->filePath(index);
     new_loaded_path.remove('*');
-    changeSourceFile(new_loaded_path );
+    changeSourceFile(new_loaded_path);
 }
 
 void CodeEditor::on_sourceFileTextChange()
@@ -446,7 +438,7 @@ void CodeEditor::on_sourceFileOpenContextMenu(const QPoint &pos)
     if(is_dir_selected)
     {
         // If not selecting the root code dir
-        Game* game = EditorInterface::game();
+        Game* game = edit_context->getGame();
         if(game && file_info.absoluteFilePath() != game->getAbsoluteCodePath())
         {
             contextMenu.addAction(&remove_folder_action);

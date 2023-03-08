@@ -14,39 +14,6 @@
 
 class NewNameDialog;
 
-class SpriteEditorContext
-{
-private:
-    Game* game;
-
-    // Assets being editted
-    SpriteAnim* spriteanim;
-    SpriteSheet* spritesheet;
-public:
-    SpriteEditorContext();
-    void reset();
-
-    void setGame(Game* new_game);
-
-    bool newSpriteSheet();
-    bool newSpriteSheetFromImage(QString image_filename);
-    bool removeSpriteSheet();
-    void setSpriteSheet(SpriteSheet* new_spritesheet);
-    SpriteSheet* findSpriteSheet(const QString& name);
-    SpriteSheet* getSpriteSheet();
-    void getSpriteSheetNames(QStringList& names) const;
-
-    bool newSpriteAnim();
-    bool removeSpriteAnim();
-    SpriteAnim* getSpriteAnim();
-    void setSpriteAnim(SpriteAnim* spriteanim);
-    void getSpriteAnimNames(QStringList& names) const;
-    SpriteAnim* findSpriteAnim(const QString& name);
-
-    void setSpriteSheetSize(int size);
-
-};
-
 class SpriteEditor : public QWidget, public EditorInterface
 {
     Q_OBJECT
@@ -56,7 +23,6 @@ private:
     QColor grid_color;
     bool preview_enabled;
 
-    SpriteEditorContext edit_context;
     bool skip_sync;
 
     SpriteModel* sprite_model;

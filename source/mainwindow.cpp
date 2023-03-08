@@ -20,17 +20,17 @@ MainWindow::MainWindow(QApplication* parent_app)
     app = parent_app;
     project_dirname_valid = false;
     setWindowTitle(EDGBA_TITLE);
-    game = new Game();
     ui->setupUi(this);
     setupUI(ui);
     emuprocess = nullptr;
     rom_compiler = nullptr;
+    edit_context.setGame(new Game());
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete game;
+    delete edit_context.getGame();
     if(emuprocess)
     {
         emuprocess->terminate();
@@ -48,6 +48,7 @@ void MainWindow::setupUI(Ui_MainWindow* ui)
 
     for(int i = 0; i < editors.size(); ++i)
     {
+        editors[i]->edit_context = &edit_context;
         editors[i]->setup(this);
     }
     ui->tabview_editor->setCurrentIndex(0);
@@ -121,7 +122,8 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 bool MainWindow::checkSave()
 {
-    if(!game->isDirty())
+    Game* game = edit_context.getGame();
+    if(game == nullptr || !game->isDirty())
     {
         return true;
     }
@@ -151,15 +153,18 @@ void MainWindow::newGame(QString project_path)
     project_dirname_valid = false;
     if (project_path != "")
     {
+        Game* game = edit_context.getGame();
         game->newGame(project_path);
         saveGame(project_path);
     }
 
+    Game* game = edit_context.getGame();
     openGame(game->getAbsoluteProjectFile());
 }
 
 void MainWindow::openGame(QString project_file)
 {
+    Game* game = edit_context.getGame();
     project_dirname_valid = game->load(project_file);
     syncActionEnabledState();
     for(int i = 0; i < editors.size(); ++i)
@@ -176,6 +181,7 @@ void MainWindow::openGame(QString project_file)
 
 void MainWindow::saveGame(QString project_path)
 {
+    Game* game = edit_context.getGame();
     if(project_path.size() == 0)
     {
         game->save();
@@ -201,6 +207,7 @@ void MainWindow::saveGame(QString project_path)
 
 void MainWindow::saveSession()
 {
+    Game* game = edit_context.getGame();
     Config::set(CONFIG_KEY_RECENT_PROJECT, game->getAbsoluteProjectFile());
     Config::save();
 }
@@ -231,6 +238,12 @@ void MainWindow::syncActionEnabledState()
         return;
     }
 
+    Game* game = edit_context.getGame();
+    if(game == nullptr)
+    {
+        return;
+    }
+
     bool enabled = game->isValid();
     ui->action_save->setEnabled(enabled);
     ui->action_save_as->setEnabled(enabled);
@@ -245,6 +258,7 @@ void MainWindow::syncActionEnabledState()
 
 void MainWindow::markDirty()
 {
+    Game* game = edit_context.getGame();
     game->markDirty();
 }
 
@@ -356,6 +370,7 @@ void MainWindow::on_run()
     rom_compiler = new RomCompiler();
     QObject::connect(rom_compiler, SIGNAL(finished(bool,QString)), this, SLOT(on_romCompileFinished(bool,QString)));
 
+    Game* game = edit_context.getGame();
     game->save();
     rom_compiler->build(game);
 }

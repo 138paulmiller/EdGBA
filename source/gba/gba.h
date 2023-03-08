@@ -3,7 +3,6 @@
 
 //TODO: determine max support via hardware. these are approximates
 
-
 #define GBA_TILED_MODE0 0x00
 #define GBA_TILED_MODE1 0x01
 #define GBA_TILED_MODE2 0x02
@@ -104,5 +103,7 @@
 #define GBA_DEFAULT_TILESET_NAME "Tileset"
 #define GBA_DEFAULT_SPRITEANIM_NAME  "SpriteAnim"
 #define GBA_DEFAULT_SPRITESHEET_NAME "SpriteSheet"
+
+#define EMPTY_TILESET_NAME "[EMPTY]"
 
 #endif // GBA_H

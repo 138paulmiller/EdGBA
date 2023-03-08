@@ -21,7 +21,8 @@ public:
     Ui_MainWindow* ui;
 
 private:
-    Game* game;
+    EditContext edit_context;
+
     bool project_dirname_valid;
 
     QVector<EditorInterface*> editors;
@@ -49,7 +50,7 @@ public:
     void saveSession();
     void loadSession();
     void markDirty();
-    Game* getGame() { return game;}
+    EditContext* getEditContext() { return &edit_context;}
 
     void closeEvent(QCloseEvent* event) override;
 

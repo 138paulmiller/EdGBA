@@ -17,88 +17,6 @@ class MapEditor;
 class TiledImageEditDialog;
 class NewNameDialog;
 
-class MapEditorContext
-{
-private:
-    Game* game;
-
-    // Actively edited assets
-    Map* map;
-    int selected_bg_index;
-
-    struct BackgroundSelection
-    {
-        //width and height of tiles in selection rect in tileset image
-        int size;
-
-        bool hflip, vflip;
-
-        //selected tiles in the selection box tilexy=[y*size+x]
-        QVector<int> tiles;
-    };
-
-    BackgroundSelection selections[GBA_BG_COUNT];
-
-public:
-    MapEditorContext();
-    void reset();
-
-    void selectBackground(int bg_index);
-    int getSelectedBackground() const;
-
-    void resizeSelectedBackground(int size_flag);
-    void getBackgroundSizeNames(QStringList& names) const;
-    QString getBackgroundSizeName(int bg_index) const;
-
-    int getTileSelectionSize() const; // size of tile in pixels
-    void setTileSelectionSize(int new_tile_selection_size);
-
-    int getSelectionSize() const;
-    void setSelectionSize(int selection_size);
-    void selectTiles(int tilex, int tiley);
-    bool getCornerSelectedTileXY(int& tilex, int& tiley) const;
-
-    bool getSelectionHFlip() const;
-    void setSelectionHFlip(bool is_flipped);
-    bool getSelectionVFlip() const;
-    void setSelectionVFlip(bool is_flipped);
-
-    void setGame(Game* new_game);
-
-    bool newMap(QString name);
-    bool removeMap();
-    void setMap(Map* new_map);
-    Map* findMap(const QString& name);
-    Map* getMap();
-    void getMapNames(QStringList& names);
-
-    bool newTilesetFromImage(QString image_filename);
-    bool newTileset(QString name);
-    bool removeSelectedTileset();
-    void setSelectedTileset(Tileset* new_tileset);
-    Tileset* findTileset(const QString& name);
-
-    Tileset* getTileset(int bg_index) const;
-    QString getTilesetName(int bg_index) const;
-
-    Tileset* getSelectedTileset() const;
-    void getTilesetNames(QStringList& names) const;
-
-    bool renderSelectedTiles(QImage& image, int target_size) const;
-
-    void handleTilesetTileClick(int tilex, int tiley);
-    void handleMapTileClick(int tilex, int tiley);
-
-    // TODO: add redo/undo buffers here
-    void undo();
-    void redo();
-
-private:
-    void refreshSelection();
-    const BackgroundSelection& getSelection() const;
-    BackgroundSelection& getSelection();
-};
-
 class Ui_MapEditor;
 class MapEditor : public QWidget, public EditorInterface
 {
@@ -113,7 +31,7 @@ private:
 
     QColor grid_color;
 
-    MapEditorContext edit_context;
+    int last_tileset_selection_x, last_tileset_selection_y;
 
     MapModel* map_model;
     QStringListModel* map_modes_model;

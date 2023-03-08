@@ -74,7 +74,6 @@ Display Modes
     2 		- 		- 		aff 	aff
 */
 
-
 static bool map_mode_bgs[GBA_TILED_MODE_COUNT][GBA_BG_COUNT] =
 {
     { 1, 1, 1, 1},
@@ -506,8 +505,6 @@ bool Background::readData(QTextStream& in)
 }
 
 // ------------------------ Map --------------------------------//
-
-
 
 Map::Map()
 {

@@ -182,10 +182,9 @@ int RomCompilerWorker::runtool(QString program, const QStringList& program_args)
         program = QApplication::applicationDirPath() + "/" + program;
         file_info = QFileInfo(program);
     }
+    program = file_info.absoluteFilePath();
 
     const QString programName = file_info.completeBaseName();
-    qDebug() << file_info.absoluteFilePath();
-
     if(!file_info.exists())
     {
         emit error(COMPILE_CATEGORY, "Toolchain failed to find " + programName);
@@ -194,39 +193,37 @@ int RomCompilerWorker::runtool(QString program, const QStringList& program_args)
         return -1;
     }
 
+#if LOG_VERBOSE
     QString cmd = program;
     foreach(const QString& arg, program_args)
     {
         cmd += " " + arg;
     }
-
-#if LOG_VERBOSE
-        emit log(COMPILE_CATEGORY, cmd);
+    emit log(COMPILE_CATEGORY, cmd);
 #endif
 
     QProcess* process = new QProcess(this);
     process->start(program, program_args);
 
-    int exit_code = -1;
-    if (process->waitForFinished())
+    process->waitForFinished();
+
+    QString programOutput = QString(process->readAllStandardOutput());
+    if(programOutput.size())
     {
-        QString programOutput = QString(process->readAllStandardOutput());
-        if(programOutput.size())
-        {
-            emit log(programName, programOutput);
-        }
-
-        QString programError = QString(process->readAllStandardError());
-        if(programError.size())
-        {
-            emit error(programName, programError);
-        }
-
-        exit_code = process->exitCode();
-        process->closeReadChannel(QProcess::StandardOutput);
-        process->closeReadChannel(QProcess::StandardError);
-        process->close();
+        emit log(programName, programOutput);
     }
+
+    QString programError = QString(process->readAllStandardError());
+    if(programError.size())
+    {
+        emit error(programName, programError);
+    }
+
+    int exit_code = process->exitCode();
+    process->closeReadChannel(QProcess::StandardOutput);
+    process->closeReadChannel(QProcess::StandardError);
+    process->close();
+
     delete process;
     return exit_code;
 }
