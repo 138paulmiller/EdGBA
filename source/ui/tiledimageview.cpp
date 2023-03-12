@@ -4,24 +4,26 @@
 #include <QGraphicsPixmapItem>
 #include <QPainter>
 
+#define GRID_LINE_WIDTH 1
+
 static void renderGrid(QImage& image, int grid_size_x, int grid_size_y, QColor grid_color)
 {
     if(grid_size_x < 0 || grid_size_y < 0)
         return;
 
     QPainter painter( &image);
-    painter.setPen(QPen(grid_color, 1));
+    painter.setPen(QPen(grid_color, GRID_LINE_WIDTH));
 
     QVector<QLine> lines;
     lines.reserve(image.width() / grid_size_x + image.height() / grid_size_y);
 
-    for (int y = grid_size_y; y < image.height(); y += grid_size_y)
+    for (int y = 0; y < image.height(); y += grid_size_y)
     {
         QLine line = QLine(0, y, image.width(), y);
         lines.push_back(line);
     }
 
-    for (int x = grid_size_x; x < image.width(); x += grid_size_x)
+    for (int x = 0; x < image.width(); x += grid_size_x)
     {
         QLine line = QLine(x, 0, x, image.height());
         lines.push_back(line);
@@ -69,7 +71,7 @@ static void renderCellHighlight(QImage& image, int grid_size_x, int grid_size_y,
     if(highlight_x != -1 && highlight_y != -1)
     {
         QPainter painter( &image);
-        painter.setPen(QPen(highlight_color, 1));
+        painter.setPen(QPen(highlight_color, GRID_LINE_WIDTH));
         painter.drawRect(highlight_x * grid_size_x, highlight_y * grid_size_y, grid_size_x, grid_size_y);
         return;
 
@@ -222,7 +224,16 @@ void TiledImageView::redraw()
         cached_image = cached_image.scaled(scaled_width, scaled_height, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         invalidateOverlay();
     }
-    draw(cached_image);
+
+    const int target_pixmap_width = cached_image.width() + GRID_LINE_WIDTH;
+    const int target_pixmap_height = cached_image.height() + GRID_LINE_WIDTH;
+    if(cached_pixmap.width() != target_pixmap_width || cached_pixmap.height() != target_pixmap_height)
+    {
+        cached_pixmap = QPixmap(target_pixmap_width, target_pixmap_height);
+        cached_pixmap.fill(Qt::transparent); // force alpha channel
+    }
+
+    draw(cached_image, GRID_LINE_WIDTH, GRID_LINE_WIDTH);
 
 
     if(cached_overlay.width() != cached_image.width() && cached_overlay.height() != cached_image.width())
@@ -257,8 +268,8 @@ void TiledImageView::getXY(QMouseEvent* event, int& x, int& y)
     int scroll_x = horizontalScrollBar()->value();
     int scroll_y = verticalScrollBar()->value();
 
-    x = (event->x() + scroll_x) / properties.zoom;
-    y = (event->y() + scroll_y) / properties.zoom;
+    x = (event->x() + scroll_x) / properties.zoom - GRID_LINE_WIDTH;
+    y = (event->y() + scroll_y) / properties.zoom - GRID_LINE_WIDTH;
 }
 
 void TiledImageView::getCellXY(QMouseEvent* event, int& cellx, int& celly)
@@ -364,17 +375,11 @@ void TiledImageView::wheelEvent(QWheelEvent *event)
     }
 }
 
-void TiledImageView::draw(const QImage& image)
+void TiledImageView::draw(const QImage& image, int x, int y)
 {
-    if(cached_pixmap.width() != image.width() || cached_pixmap.height() != image.height())
-    {
-        cached_pixmap = QPixmap(image.width(), image.height());
-        cached_pixmap.fill(Qt::transparent); // force alpha channel
-    }
-
     QPainter painter(&cached_pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage(0, 0, image);
+    painter.drawImage(x, y, image);
 }
 
 void TiledImageView::render()
@@ -387,8 +392,8 @@ void TiledImageView::render()
 
 void TiledImageView::renderOverlay()
 {
-    const int width = cached_image.width();
-    const int height = cached_image.height();
+    const int width = cached_image.width() + GRID_LINE_WIDTH;
+    const int height = cached_image.height() + GRID_LINE_WIDTH;
 
     // draw overlay
     cached_overlay = QImage(width, height, QImage::Format_ARGB32);

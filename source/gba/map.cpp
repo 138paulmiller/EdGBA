@@ -418,10 +418,14 @@ void Background::writeData(QTextStream& out)
     CGen::ArrayWriter array_writer(out);
     array_writer.begin(CGen::CONST_UNSIGNED_CHAR, getTilesId() );
 
-    // Only write data if there is a tileset present. otherwise this data is unused
-
     forEachTileIndex([this, &array_writer](int tile_index)
     {
+        // Only write data if there is a tileset present. otherwise this data is unused
+        if(tileset == nullptr)
+        {
+            return;
+        }
+    
         if(tile_index < tiles.size())
         {
             int tile = tiles[tile_index];

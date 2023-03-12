@@ -67,7 +67,7 @@ public:
     void invalidateOverlay();
 
 private:
-    void draw(const QImage& image);
+    void draw(const QImage& image, int x=0, int y=0);
 
     void render();
     void renderOverlay();
