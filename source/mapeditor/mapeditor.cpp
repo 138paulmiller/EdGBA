@@ -96,6 +96,15 @@ void MapEditor::setup(MainWindow* window)
 
 void MapEditor::reset()
 {
+    selected_bg_index = GBA_BG0;
+    for(int i = 0; i < GBA_BG_COUNT; ++i)
+    {
+        selections[i].tiles = { 0 };
+        selections[i].size = 1;
+        selections[i].hflip = 0;
+        selections[i].vflip = 0;
+    }
+
     skip_sync = 0;
     edit_context->reset();
 
@@ -135,7 +144,7 @@ void MapEditor::syncViews()
     ui->map_view->setModel(map_model);
     map_model->setMap(map);
 
-    Tileset* tileset = edit_context->getSelectedTileset();
+    Tileset* tileset = getSelectedTileset();
     tileset_model->setTileset(tileset);
 
     // Redraw views
@@ -153,7 +162,7 @@ void MapEditor::syncLabels()
     for(int bg_index = 0; bg_index < GBA_BG_COUNT; ++bg_index)
     {
         bool enabled = Map::getBackgroundEnabled(mode, bg_index);
-        if(!enabled && edit_context->getSelectedBackground() == bg_index)
+        if(!enabled && getSelectedBackground() == bg_index)
         {
             select_new_bg = true;
         }
@@ -167,7 +176,7 @@ void MapEditor::syncLabels()
         {
             if(Map::getBackgroundEnabled(mode, new_bg_index))
             {
-                edit_context->selectBackground(new_bg_index);
+                selectBackground(new_bg_index);
                 break;
             }
         }
@@ -176,7 +185,7 @@ void MapEditor::syncLabels()
     // update toggle button
     for(int bg_index = 0; bg_index < GBA_BG_COUNT; ++bg_index)
     {
-        background_buttons[bg_index]->setChecked(edit_context->getSelectedBackground() == bg_index);
+        background_buttons[bg_index]->setChecked(getSelectedBackground() == bg_index);
     }
 
     // Sync map mode combo
@@ -189,9 +198,9 @@ void MapEditor::syncLabels()
     edit_context->getTilesetNames(tileset_names);
 
     // Sync tileset names combos
-    int bg_index = edit_context->getSelectedBackground();
+    int bg_index = getSelectedBackground();
     QString current_tileset_name = edit_context->getTilesetName(bg_index);
-    QString background_size_label = edit_context->getBackgroundSizeName(bg_index);
+    QString background_size_label = getBackgroundSizeName(bg_index);
 
     tileset_names_model->setStringList(tileset_names);
     ui->tileset_names->setCurrentText(current_tileset_name);
@@ -212,7 +221,7 @@ void MapEditor::syncLabels()
         }
         // select new bg_size
         background_sizes = Map::getBackgroundSizeNames(mode, bg_index);
-        background_size_label = edit_context->getBackgroundSizeName(bg_index);
+        background_size_label = getBackgroundSizeName(bg_index);
     }
 
     background_sizes_model->setStringList(background_sizes);
@@ -225,7 +234,7 @@ void MapEditor::syncLabels()
     ui->map_names->setCurrentText(map->getName());
 
     // Sync tile size
-    int tile_size = edit_context->getTileSelectionSize();
+    int tile_size = getTileSelectionSize();
     ui->tile_size->setValue(tile_size);
 
     // Sync Priority
@@ -237,8 +246,8 @@ void MapEditor::syncLabels()
     ui->tile_hflip->setEnabled(flip_enabled);
     ui->tile_vflip->setEnabled(flip_enabled);
 
-    ui->tile_hflip->setChecked(edit_context->getSelectionHFlip());
-    ui->tile_vflip->setChecked(edit_context->getSelectionVFlip());
+    ui->tile_hflip->setChecked(getSelectionHFlip());
+    ui->tile_vflip->setChecked(getSelectionVFlip());
 }
 
 void MapEditor::setTileSize(int tile_size)
@@ -248,16 +257,16 @@ void MapEditor::setTileSize(int tile_size)
         tile_size = GBA_TILE_SIZE;
     }
 
-    edit_context->setTileSelectionSize(tile_size);
+    setTileSelectionSize(tile_size);
 }
 
 void MapEditor::refreshTilesetView()
 {
-    int tile_size = edit_context->getTileSelectionSize();
+    int tile_size = getTileSelectionSize();
     ui->tileset_view->setGrid(grid_color, tile_size, tile_size);
 
     int tilex, tiley;
-    if(edit_context->getCornerSelectedTileXY(tilex, tiley))
+    if(getCornerSelectedTileXY(tilex, tiley))
     {
         int cellx = tilex / tile_size;
         int celly = tiley / tile_size;
@@ -270,16 +279,16 @@ void MapEditor::refreshTilesetView()
 
 void MapEditor::refreshMapView()
 {
-    int tile_size = edit_context->getTileSelectionSize();
+    int tile_size = getTileSelectionSize();
     ui->map_view->setGrid(grid_color, tile_size, tile_size);
     ui->map_view->redraw();
 }
 
 void MapEditor::on_mapTileClick(int tilex, int tiley)
 {
-    edit_context->handleMapTileClick(tilex, tiley);
+    handleMapTileClick(tilex, tiley);
 
-    int selection_size = edit_context->getSelectionSize();
+    int selection_size = getSelectionSize();
     for(int dy = 0; dy < selection_size; ++dy)
     {
         for(int dx = 0; dx < selection_size; ++dx)
@@ -294,7 +303,7 @@ void MapEditor::on_mapTileClick(int tilex, int tiley)
 
 void MapEditor::on_tilesetTileClick(int tilex, int tiley)
 {
-    edit_context->handleTilesetTileClick(tilex, tiley);
+    handleTilesetTileClick(tilex, tiley);
     ui->tileset_view->invalidateOverlay();
     refreshTilesetView();
 }
@@ -340,7 +349,7 @@ void MapEditor::on_mapEditName(bool /*enabled*/)
     {
         QString name = editname_dialog->getName();
         map->setName(name);
-        edit_context->setMap(map);
+        selectMap(map);
 
         syncLabels();
         main_window->markDirty();
@@ -376,8 +385,9 @@ void MapEditor::on_mapSelectionChange(QString name)
 
     //TODO: Gracefully handle null maps
     Map* map = edit_context->findMap(name);
-    edit_context->setMap(map);
+    selectMap(map);
 
+    ui->map_view->invalidate();
     syncUI();
     main_window->markDirty();
 }
@@ -416,21 +426,21 @@ void MapEditor::on_tileResize(int tile_size)
 
 void MapEditor::on_tileHFlip(bool is_flipped)
 {
-    edit_context->setSelectionHFlip(is_flipped);
+    setSelectionHFlip(is_flipped);
     refreshTilesetView();
     refreshMapView();
 }
 
 void MapEditor::on_tileVFlip(bool is_flipped)
 {
-    edit_context->setSelectionVFlip(is_flipped);
+    setSelectionVFlip(is_flipped);
     refreshTilesetView();
     refreshMapView();
 }
 
 void MapEditor::on_backgroundChange(int index)
 {
-    edit_context->selectBackground(index);
+    selectBackground(index);
     syncUI();
 }
 
@@ -440,7 +450,7 @@ void MapEditor::on_backgroundResize(QString value)
 
     int size_flag = Map::getBackgroundSizeFlag(value);
     if(size_flag != -1)
-        edit_context->resizeSelectedBackground(size_flag);
+        resizeSelectedBackground(size_flag);
 
     ui->map_view->invalidate();
     syncUI();
@@ -450,7 +460,7 @@ void MapEditor::on_backgroundPriorityChange(int priority)
 {
     if(Map* map = edit_context->getMap())
     {
-        int bg_index = edit_context->getSelectedBackground();
+        int bg_index = getSelectedBackground();
         map->setPriority(bg_index, priority);
     }
 
@@ -461,27 +471,27 @@ void MapEditor::on_backgroundPriorityChange(int priority)
 
 void MapEditor::on_clickBackground0(bool /**/)
 {
-    edit_context->selectBackground(GBA_BG0);
+    selectBackground(GBA_BG0);
     syncUI();
 }
 
 void MapEditor::on_clickBackground1(bool /**/)
 {
-    edit_context->selectBackground(GBA_BG1);
+    selectBackground(GBA_BG1);
     syncUI();
 
 }
 
 void MapEditor::on_clickBackground2(bool /**/)
 {
-    edit_context->selectBackground(GBA_BG2);
+    selectBackground(GBA_BG2);
     syncUI();
 
 }
 
 void MapEditor::on_clickBackground3(bool /**/)
 {
-    edit_context->selectBackground(GBA_BG3);
+    selectBackground(GBA_BG3);
     syncUI();
 }
 
@@ -491,7 +501,7 @@ void MapEditor::on_tilesetSelectionChange(QString name)
 
     //TODO: Gracefully handle null maps
     Tileset* tileset = edit_context->findTileset(name);
-    edit_context->setSelectedTileset(tileset);
+    setSelectedTileset(tileset);
 
     ui->map_view->invalidate();
 
@@ -501,7 +511,7 @@ void MapEditor::on_tilesetSelectionChange(QString name)
 
 void MapEditor::on_tilesetEditName(bool /*enabled*/)
 {
-    Tileset* tileset = edit_context->getSelectedTileset();
+    Tileset* tileset = getSelectedTileset();
     if(tileset == nullptr)
     {
         return;
@@ -516,7 +526,7 @@ void MapEditor::on_tilesetEditName(bool /*enabled*/)
     {
         QString name = editname_dialog->getName();
         tileset->setName(name);
-        edit_context->setSelectedTileset(tileset);
+        setSelectedTileset(tileset);
 
         syncLabels();
         main_window->markDirty();
@@ -550,7 +560,8 @@ void MapEditor::on_tilesetLoad(bool /*enabled*/)
 {
     QString image_filename = QFileDialog::getOpenFileName(this, tr("Load Tileset Image"), "", tr("Image Files (*.png)"));
 
-    edit_context->newTilesetFromImage(image_filename);
+    Tileset* tileset = getSelectedTileset();
+    edit_context->loadTilesetFromImage(tileset, image_filename);
 
     ui->map_view->invalidateOverlay();
     syncUI();
@@ -566,7 +577,7 @@ void MapEditor::on_tilesetAdd(bool)
     if(editname_dialog->accepted())
     {
         QString name = editname_dialog->getName();
-        edit_context->newTileset(name);
+        newTileset(name);
         main_window->markDirty();
         syncUI();
     }
@@ -577,7 +588,7 @@ void MapEditor::on_tilesetAdd(bool)
 
 void MapEditor::on_tilesetRemove(bool)
 {
-    edit_context->removeSelectedTileset();
+    removeSelectedTileset();
 
     ui->map_view->invalidateOverlay();
     syncUI();
@@ -616,4 +627,280 @@ void MapEditor::zoomOut()
     ui->map_view->zoomBy(-1);
     refreshMapView();
     refreshTilesetView();
+}
+
+
+void MapEditor::selectTiles(int tilex, int tiley)
+{
+    Tileset* tileset = getSelectedTileset();
+    if(tileset == nullptr)
+    {
+        return;
+    }
+
+    int tiles_width = tileset->getWidth()/ GBA_TILE_SIZE;
+    int tiles_height = tileset->getHeight()/ GBA_TILE_SIZE;
+    if(tilex >= tiles_width || tiley >= tiles_height)
+    {
+        return;
+    }
+
+    TilesetSelection& selection = getSelection();
+    selection.tiles.clear();
+    for(int dy = 0; dy < selection.size; ++dy)
+    {
+        for(int dx = 0; dx < selection.size; ++dx)
+        {
+            int tile = (tiley + dy) * tiles_width + (tilex + dx);
+            selection.tiles.push_back(tile);
+        }
+    }
+}
+
+bool MapEditor::getCornerSelectedTileXY(int& tilex, int& tiley) const
+{
+    Tileset* tileset = getSelectedTileset();
+    if(tileset == nullptr)
+    {
+        return false;
+    }
+
+    const TilesetSelection& selection = getSelection();
+    if(selection.tiles.size())
+    {
+        tileset->getTileImageXY(selection.tiles[0], tilex, tiley);
+        return true;
+    }
+    return false;
+}
+
+
+int MapEditor::getTileSelectionSize() const
+{
+    const TilesetSelection& selection = getSelection();
+    return selection.size * GBA_TILE_SIZE;
+}
+
+void MapEditor::setTileSelectionSize(int new_tile_selection_size)
+{
+    setSelectionSize(new_tile_selection_size / GBA_TILE_SIZE);
+}
+
+int MapEditor::getSelectionSize() const
+{
+    const TilesetSelection& selection = getSelection();
+    return selection.size;
+}
+
+bool MapEditor::getSelectionHFlip() const
+{
+    const TilesetSelection& selection = getSelection();
+    return selection.hflip;
+}
+
+void MapEditor::setSelectionHFlip(bool is_flipped)
+{
+    TilesetSelection& selection = getSelection();
+    selection.hflip = is_flipped;
+    refreshSelection();
+}
+
+bool MapEditor::getSelectionVFlip() const
+{
+    const TilesetSelection& selection = getSelection();
+    return selection.vflip;
+}
+
+void MapEditor::setSelectionVFlip(bool is_flipped)
+{
+    TilesetSelection& selection = getSelection();
+    selection.vflip = is_flipped;
+    refreshSelection();
+}
+
+void MapEditor::setSelectionSize(int new_selection_size)
+{
+    TilesetSelection& selection = getSelection();
+    selection.size = new_selection_size;
+    refreshSelection();
+}
+
+bool MapEditor::renderSelectedTiles(QImage& image, int target_size) const
+{
+    Tileset* tileset = getSelectedTileset();
+    if(tileset == nullptr)
+    {
+        return false;
+    }
+
+    int imagex, imagey;
+    if(!getCornerSelectedTileXY(imagex, imagey))
+    {
+        return false;
+    }
+
+    QRect rect;
+    rect.setX(imagex);
+    rect.setY(imagey);
+    rect.setWidth(getTileSelectionSize());
+    rect.setHeight(getTileSelectionSize());
+
+    tileset->renderRegion(rect, image);
+
+    float scale = target_size;
+    image = image.scaled(scale, scale, Qt::KeepAspectRatio);
+    return true;
+}
+
+void MapEditor::refreshSelection()
+{
+    Tileset* tileset = getSelectedTileset();
+    if(tileset == nullptr)
+    {
+        return;
+    }
+
+    TilesetSelection& selection = getSelection();
+
+    int tilex, tiley;
+    tileset->getTileXY(selection.tiles[0], tilex, tiley);
+    selectTiles(tilex, tiley);
+}
+
+MapEditor::TilesetSelection& MapEditor::getSelection()
+{
+    return selections[(int)selected_bg_index];
+}
+
+const MapEditor::TilesetSelection& MapEditor::getSelection() const
+{
+    return selections[(int)selected_bg_index];
+}
+
+void MapEditor::handleTilesetTileClick(int tilex, int tiley)
+{
+    TilesetSelection& selection = getSelection();
+    tilex *= selection.size;
+    tiley *= selection.size;
+    selectTiles(tilex, tiley);
+}
+
+void MapEditor::handleMapTileClick(int tilex, int tiley)
+{
+    Map* map = edit_context->getMap();
+    if(map == nullptr)
+        return;
+
+    Background* background = map->getBackground(selected_bg_index);
+    if(background == nullptr)
+    {
+        return;
+    }
+
+    TilesetSelection& selection = getSelection();
+    tilex *= selection.size;
+    tiley *= selection.size;
+
+    const bool hflip = selection.hflip;
+    const bool vflip = selection.vflip;
+
+    for(int dy = 0; dy < selection.size; ++dy)
+    {
+        for(int dx = 0; dx < selection.size; ++dx)
+        {
+            // If selection is flipped, grab tileset tiles in reverse order
+            const int du = hflip ? selection.size - 1 - dx : dx;
+            const int dv = vflip ? selection.size - 1 - dy : dy;
+            int tileset_tile_index = dv * selection.size + du;
+
+            int bg_width = Map::getBackgroundSizeFlagWidth(background->size_flag);
+            int tile_index = (tiley + dy) * bg_width + (tilex + dx);
+
+            if(tileset_tile_index < selection.tiles.size())
+            {
+                int tile = selection.tiles[tileset_tile_index];
+                map->setTile(selected_bg_index, tile_index, tile, hflip, vflip);
+            }
+        }
+    }
+}
+
+void MapEditor::selectBackground(int bg_index)
+{
+    selected_bg_index = bg_index;
+}
+
+QString MapEditor::getBackgroundSizeName(int bg_index) const
+{
+    if(Map* map = edit_context->getMap())
+    {
+        return Map::getBackgroundSizeName(map->getBackgroundSize(bg_index));
+    }
+    return "";
+}
+
+int MapEditor::getSelectedBackground() const
+{
+    return selected_bg_index;
+}
+
+void MapEditor::resizeSelectedBackground(int size_flag)
+{
+    if(Map* map = edit_context->getMap())
+    {
+        map->resizeBackground(selected_bg_index, size_flag);
+    }
+}
+
+void MapEditor::newTileset(QString name)
+{
+    Tileset* tileset = edit_context->newTileset(name);
+    setSelectedTileset(tileset);
+}
+
+void MapEditor::selectMap(Map* new_map)
+{
+    edit_context->setMap(new_map);
+
+    if(Map* map = edit_context->getMap())
+    {
+        const QString tileset_name = map->getTilesetName(selected_bg_index);
+        Tileset* tileset = edit_context->findTileset(tileset_name);
+        setSelectedTileset(tileset);
+    }
+    else
+    {
+        setSelectedTileset(nullptr);
+    }
+}
+
+Tileset* MapEditor::getSelectedTileset() const
+{
+    return edit_context->getTileset(selected_bg_index);
+}
+
+void MapEditor::setSelectedTileset(Tileset* tileset)
+{
+    if(Map* map = edit_context->getMap())
+    {
+        map->setTileset(selected_bg_index, tileset);
+    }
+}
+
+bool MapEditor::removeSelectedTileset()
+{
+    Tileset* tileset = getSelectedTileset();
+
+
+    Tileset* new_tileset = nullptr;
+    if(Game* game= edit_context->getGame())
+    {
+        QList<Tileset*> tilesets = game->getAssets<Tileset>();
+        if(tilesets.size())
+            new_tileset = tilesets.first();
+    }
+
+    edit_context->replaceTileset(tileset, new_tileset);
+    setSelectedTileset(new_tileset);
+    return true;
 }

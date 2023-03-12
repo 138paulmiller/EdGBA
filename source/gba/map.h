@@ -99,6 +99,8 @@ public:
     QString getTilesId(int bg_index) const;
 
     Tileset* getTileset(int bg_index);
+    void removeTileset(Tileset* tileset);
+    void replaceTileset(Tileset* tileset, Tileset* new_tileset);
     void setTileset(int bg_index, Tileset* new_tileset);
     void setTilesetName(int bg_index, QString name);
     QString getTilesetName(int bg_index);

@@ -139,6 +139,7 @@ void Game::removeAsset(AssetType* asset)
     {
         QList<Asset*>& assets = asset_table[type];
         assets.removeAll(asset);
+        delete asset;
     }
 }
 

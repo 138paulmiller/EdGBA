@@ -13,15 +13,6 @@ EditContext::~EditContext()
 
 void EditContext::reset()
 {
-    selected_bg_index = GBA_BG0;
-    for(int i = 0; i < GBA_BG_COUNT; ++i)
-    {
-        selections[i].tiles = { 0 };
-        selections[i].size = 1;
-        selections[i].hflip = 0;
-        selections[i].vflip = 0;
-    }
-
     if(game == nullptr)
     {
         tileset = nullptr;
@@ -31,46 +22,30 @@ void EditContext::reset()
         return;
     }
 
-
+    const int bg_index = 0;
     QList<Tileset*> tilesets = game->getAssets<Tileset>();
     if(tilesets.size())
-    {
-        setSelectedTileset(tilesets[0]);
-    }
+        setTileset(bg_index, tilesets[0]);
     else
-    {
-        setSelectedTileset(nullptr);
-    }
+        setTileset(bg_index, nullptr);
 
     QList<Map*> maps = game->getAssets<Map>();
     if(maps.size())
-    {
         setMap(maps[0]);
-    }
     else
-    {
         setMap(nullptr);
-    }
 
     QList<SpriteSheet*> spritesheets = game->getAssets<SpriteSheet>();
     if(spritesheets.size())
-    {
         setSpriteSheet(spritesheets[0]);
-    }
     else
-    {
         setSpriteSheet(nullptr);
-    }
 
     QList<SpriteAnim*> spriteanims  = game->getAssets<SpriteAnim>();
     if(spriteanims.size())
-    {
         setSpriteAnim(spriteanims[0]);
-    }
     else
-    {
         setSpriteAnim(nullptr);
-    }
 }
 
 Game* EditContext::getGame()
@@ -86,24 +61,6 @@ void EditContext::setGame(Game* new_game)
         return;
     }
     reset();
-}
-
-void EditContext::selectBackground(int bg_index)
-{
-    selected_bg_index = bg_index;
-}
-
-int EditContext::getSelectedBackground() const
-{
-    return selected_bg_index;
-}
-
-void EditContext::resizeSelectedBackground(int size_flag)
-{
-    if(map)
-    {
-        map->resizeBackground(selected_bg_index, size_flag);
-    }
 }
 
 bool EditContext::newMap(QString name)
@@ -129,7 +86,7 @@ bool EditContext::removeMap()
     return true;
 }
 
-bool EditContext::newTilesetFromImage(QString image_filename)
+bool EditContext::loadTilesetFromImage(Tileset* tileset, QString image_filename)
 {
     if(image_filename.isNull() || image_filename.isEmpty())
     {
@@ -157,7 +114,6 @@ bool EditContext::newTilesetFromImage(QString image_filename)
     }
 
     bool rename = false;
-    Tileset* tileset = getSelectedTileset();
     if(tileset == nullptr)
     {
         rename = true;
@@ -172,126 +128,44 @@ bool EditContext::newTilesetFromImage(QString image_filename)
             tileset->setName(fileInfo.baseName());
         }
 
-        setSelectedTileset(tileset);
         game->rebuildPalettes();
         return true;
     }
     return false;
 }
 
-bool EditContext::newTileset(QString name)
+Tileset* EditContext::newTileset(QString name)
 {
-    if(game == nullptr || map == nullptr)
-    {
-        return false;
-    }
+    if(game == nullptr)
+        return nullptr;
 
     Tileset* tileset = game->addAsset<Tileset>();
     if(tileset)
         tileset->setName(name);
-    setSelectedTileset(tileset);
-    return getTileset(selected_bg_index) != nullptr;
+
+    return tileset;
 }
 
-bool EditContext::removeSelectedTileset()
+void EditContext::removeTileset(Tileset *tileset)
 {
-    if(game == nullptr)
-    {
-        return false;
-    }
+    if(map)
+        map->removeTileset(tileset);
+    if(game)
+        game->removeAsset<Tileset>(tileset);
+}
 
-    Tileset* tileset = getSelectedTileset();
-    game->removeAsset<Tileset>(tileset);
-
-    Tileset* new_tileset = nullptr;
-    QList<Tileset*> tilesets = game->getAssets<Tileset>();
-    if(tilesets.size())
-        new_tileset = tilesets.first();
-
+void EditContext::replaceTileset(Tileset *tileset, Tileset *new_tileset)
+{
     foreach(Map* map, game->getAssets<Map>())
     {
-        for(int bg_index = 0; bg_index < GBA_BG_COUNT; ++bg_index)
-        {
-            if(map->getTileset(bg_index) == tileset)
-            {
-                map->setTileset(bg_index, new_tileset);
-            }
-        }
+        map->replaceTileset(tileset, new_tileset);
     }
-
-    tileset = nullptr;
-    if(tilesets.size())
-    {
-        tileset = tilesets[0];
-    }
-    setSelectedTileset(tileset);
-    return true;
-}
-
-void EditContext::selectTiles(int tilex, int tiley)
-{
-    if(game == nullptr || map == nullptr)
-    {
-        return;
-    }
-
-    Tileset* tileset = getSelectedTileset();
-    if(tileset == nullptr)
-    {
-        return;
-    }
-
-    int tiles_width = tileset->getWidth()/ GBA_TILE_SIZE;
-    int tiles_height = tileset->getHeight()/ GBA_TILE_SIZE;
-    if(tilex >= tiles_width || tiley >= tiles_height)
-    {
-        return;
-    }
-
-    TilesetSelection& selection = getSelection();
-    selection.tiles.clear();
-    for(int dy = 0; dy < selection.size; ++dy)
-    {
-        for(int dx = 0; dx < selection.size; ++dx)
-        {
-            int tile = (tiley + dy) * tiles_width + (tilex + dx);
-            selection.tiles.push_back(tile);
-        }
-    }
-}
-
-bool EditContext::getCornerSelectedTileXY(int& tilex, int& tiley) const
-{
-    if(game == nullptr || map == nullptr)
-    {
-        return false;
-    }
-
-
-    Tileset* tileset = getSelectedTileset();
-    if(tileset == nullptr)
-    {
-        return false;
-    }
-
-    const TilesetSelection& selection = getSelection();
-    if(selection.tiles.size())
-    {
-        tileset->getTileImageXY(selection.tiles[0], tilex, tiley);
-        return true;
-    }
-    return false;
+    removeTileset(tileset);
 }
 
 void EditContext::setMap(Map* new_map)
 {
     map = new_map;
-    if(map)
-    {
-        const QString tileset_name = map->getTilesetName(selected_bg_index);
-        Tileset* tileset = findTileset(tileset_name);
-        setSelectedTileset(tileset);
-    }
 }
 
 Map* EditContext::findMap(const QString& name)
@@ -315,12 +189,6 @@ void EditContext::getMapNames(QStringList& names)
     }
 }
 
-void EditContext::setSelectedTileset(Tileset* new_tileset)
-{
-    if(map)
-        map->setTileset(selected_bg_index, new_tileset);
-}
-
 Tileset* EditContext::findTileset(const QString& name)
 {
     return game->findAsset<Tileset>(name);
@@ -335,6 +203,14 @@ Tileset* EditContext::getTileset(int bg_index) const
     return map->getTileset(bg_index);
 }
 
+void EditContext::setTileset(int bg_index, Tileset* tileset) const
+{
+    if(map != nullptr)
+    {
+        map->setTileset(bg_index, tileset);
+    }
+}
+
 QString EditContext::getTilesetName(int bg_index) const
 {
     Tileset* tileset = getTileset(bg_index);
@@ -343,21 +219,6 @@ QString EditContext::getTilesetName(int bg_index) const
         return EMPTY_TILESET_NAME;
     }
     return tileset->getName();
-}
-
-QString EditContext::getBackgroundSizeName(int bg_index) const
-{
-    if(map == nullptr)
-    {
-        return "";
-    }
-
-    return Map::getBackgroundSizeName(map->getBackgroundSize(bg_index));
-}
-
-Tileset* EditContext::getSelectedTileset() const
-{
-    return getTileset(selected_bg_index);
 }
 
 void EditContext::getTilesetNames(QStringList& names) const
@@ -370,166 +231,6 @@ void EditContext::getTilesetNames(QStringList& names) const
         }
     }
     names << EMPTY_TILESET_NAME;
-}
-
-void EditContext::getBackgroundSizeNames(QStringList& names) const
-{
-    foreach(const Tileset* tileset, game->getAssets<Tileset>())
-    {
-        if(tileset)
-        {
-            names << tileset->getName();
-        }
-    }
-}
-
-int EditContext::getTileSelectionSize() const
-{
-    const TilesetSelection& selection = getSelection();
-    return selection.size * GBA_TILE_SIZE;
-}
-
-void EditContext::setTileSelectionSize(int new_tile_selection_size)
-{
-    setSelectionSize(new_tile_selection_size / GBA_TILE_SIZE);
-}
-
-int EditContext::getSelectionSize() const
-{
-    const TilesetSelection& selection = getSelection();
-    return selection.size;
-}
-
-bool EditContext::getSelectionHFlip() const
-{
-    const TilesetSelection& selection = getSelection();
-    return selection.hflip;
-}
-
-void EditContext::setSelectionHFlip(bool is_flipped)
-{
-    TilesetSelection& selection = getSelection();
-    selection.hflip = is_flipped;
-    refreshSelection();
-}
-
-bool EditContext::getSelectionVFlip() const
-{
-    const TilesetSelection& selection = getSelection();
-    return selection.vflip;
-}
-
-void EditContext::setSelectionVFlip(bool is_flipped)
-{
-    TilesetSelection& selection = getSelection();
-    selection.vflip = is_flipped;
-    refreshSelection();
-}
-
-void EditContext::setSelectionSize(int new_selection_size)
-{
-    TilesetSelection& selection = getSelection();
-    selection.size = new_selection_size;
-    refreshSelection();
-}
-
-bool EditContext::renderSelectedTiles(QImage& image, int target_size) const
-{
-    Tileset* tileset = getSelectedTileset();
-    if(tileset == nullptr)
-    {
-        return false;
-    }
-
-    int imagex, imagey;
-    if(!getCornerSelectedTileXY(imagex, imagey))
-    {
-        return false;
-    }
-
-    QRect rect;
-    rect.setX(imagex);
-    rect.setY(imagey);
-    rect.setWidth(getTileSelectionSize());
-    rect.setHeight(getTileSelectionSize());
-
-    tileset->renderRegion(rect, image);
-
-    float scale = target_size;
-    image = image.scaled(scale, scale, Qt::KeepAspectRatio);
-    return true;
-}
-
-void EditContext::refreshSelection()
-{
-    Tileset* tileset = getSelectedTileset();
-    if(tileset == nullptr)
-    {
-        return;
-    }
-
-    TilesetSelection& selection = getSelection();
-
-    int tilex, tiley;
-    tileset->getTileXY(selection.tiles[0], tilex, tiley);
-    selectTiles(tilex, tiley);
-}
-
-EditContext::TilesetSelection& EditContext::getSelection()
-{
-    return selections[(int)selected_bg_index];
-}
-
-const EditContext::TilesetSelection& EditContext::getSelection() const
-{
-    return selections[(int)selected_bg_index];
-}
-
-void EditContext::handleTilesetTileClick(int tilex, int tiley)
-{
-    TilesetSelection& selection = getSelection();
-    tilex *= selection.size;
-    tiley *= selection.size;
-    selectTiles(tilex, tiley);
-}
-
-void EditContext::handleMapTileClick(int tilex, int tiley)
-{
-    if(map == nullptr)
-        return;
-
-    Background* background = map->getBackground(selected_bg_index);
-    if(background == nullptr)
-    {
-        return;
-    }
-
-    TilesetSelection& selection = getSelection();
-    tilex *= selection.size;
-    tiley *= selection.size;
-
-    const bool hflip = selection.hflip;
-    const bool vflip = selection.vflip;
-
-    for(int dy = 0; dy < selection.size; ++dy)
-    {
-        for(int dx = 0; dx < selection.size; ++dx)
-        {
-            // If selection is flipped, grab tileset tiles in reverse order
-            const int du = hflip ? selection.size - 1 - dx : dx;
-            const int dv = vflip ? selection.size - 1 - dy : dy;
-            int tileset_tile_index = dv * selection.size + du;
-
-            int bg_width = Map::getBackgroundSizeFlagWidth(background->size_flag);
-            int tile_index = (tiley + dy) * bg_width + (tilex + dx);
-
-            if(tileset_tile_index < selection.tiles.size())
-            {
-                int tile = selection.tiles[tileset_tile_index];
-                map->setTile(selected_bg_index, tile_index, tile, hflip, vflip);
-            }
-        }
-    }
 }
 
 bool EditContext::newSpriteSheet()

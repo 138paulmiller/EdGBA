@@ -709,6 +709,18 @@ void Map::setTileset(int bg_index, Tileset* new_tileset)
     syncBackgrounds();
 }
 
+void Map::removeTileset(Tileset* tileset)
+{
+    replaceTileset(tileset, nullptr);
+}
+
+void Map::replaceTileset(Tileset* tileset, Tileset* new_tileset)
+{
+    for(int bg_index = 0; bg_index < GBA_BG_COUNT; ++bg_index)
+        if(tileset == backgrounds[bg_index].tileset)
+            backgrounds[bg_index].tileset = new_tileset;
+}
+
 QString Map::getTilesetName(int bg_index)
 {
     Tileset* tileset = getTileset(bg_index);
