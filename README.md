@@ -32,7 +32,10 @@ An IDE for making Game Boy Advance games
 1. Clone repo
     - `git clone https://github.com/138paulmiller/EdGBA.git`
 2. Install Tools 
-    - `sudo apt install qt5-default`
+    - `sudo apt-get install build-essential`
+    - `sudo apt-get install qtcreator`
+    - `sudo apt-get install qt5-default`
+
 
 ### Thanks
 - [Tonc](https://www.coranac.com/tonc/text/toc.htm)
