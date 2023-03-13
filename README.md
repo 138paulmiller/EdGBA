@@ -34,7 +34,8 @@ An IDE for making Game Boy Advance games
 2. Install Tools 
     - `sudo apt-get install build-essential`
     - `sudo apt-get install qtcreator`
-    - `sudo apt-get install qt5-default`
+    - `wget https://download.qt.io/new_archive/qt/5.7/5.7.0/qt-opensource-linux-x64-5.7.0.run`
+    - `chmod +x qt-opensource-linux-x64-5.7.0.run ./qt-opensource-linux-x64-5.7.0.run`
 
 
 ### Thanks
