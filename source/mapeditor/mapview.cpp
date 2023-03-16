@@ -94,6 +94,7 @@ MapView::MapView(QWidget* parent)
 
 void MapView::mouseMoveEvent(QMouseEvent* event)
 {
+    TiledImageView::mouseMoveEvent(event);
     if(!dragging)
     {
         return;

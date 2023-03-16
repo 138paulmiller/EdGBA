@@ -19,6 +19,9 @@ struct TileImageViewDrawProperties
     bool indices_enabled;
     int grid_size_x, grid_size_y;
     int cell_highlight_x, cell_highlight_y;
+
+    bool mouse_cell_highlight;
+    int mouse_cell_x, mouse_cell_y;
 };
 
 class TiledImageModel : public QObject
@@ -94,6 +97,7 @@ public:
     virtual void keyPressEvent(QKeyEvent *event) override;
     virtual void keyReleaseEvent(QKeyEvent *event) override;
     virtual void wheelEvent(QWheelEvent *event) override;
+    virtual void mouseMoveEvent( QMouseEvent *e ) override;
     // End QOpenGLWidget
 };
 

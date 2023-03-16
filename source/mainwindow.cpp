@@ -20,6 +20,8 @@ MainWindow::MainWindow(QApplication* parent_app)
     app = parent_app;
     project_dirname_valid = false;
     setWindowTitle(EDGBA_TITLE);
+    setMouseTracking(true);
+
     ui->setupUi(this);
     setupUI(ui);
     emuprocess = nullptr;

@@ -117,7 +117,10 @@ TileImageViewDrawProperties::TileImageViewDrawProperties():
     grid_enabled(false),
     indices_enabled(false),
     grid_size_x(8),
-    grid_size_y(8)
+    grid_size_y(8),
+    mouse_cell_highlight(true),
+    mouse_cell_x(0),
+    mouse_cell_y(0)
 {}
 
 TiledImageModel::TiledImageModel(QObject* parent)
@@ -166,6 +169,11 @@ TiledImageView::TiledImageView(QWidget* parent):
 
     setScene(scene);
     setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+    setMouseTracking(true);
+    if(viewport())
+        viewport()->setMouseTracking(true);
+
     clearCellHighlight();
 
     invalidate();
@@ -234,7 +242,6 @@ void TiledImageView::redraw()
     }
 
     draw(cached_image, GRID_LINE_WIDTH, GRID_LINE_WIDTH);
-
 
     if(cached_overlay.width() != cached_image.width() && cached_overlay.height() != cached_image.width())
     {
@@ -375,6 +382,17 @@ void TiledImageView::wheelEvent(QWheelEvent *event)
     }
 }
 
+void TiledImageView::mouseMoveEvent( QMouseEvent *event )
+{
+    TiledImageView::getCellXY(event, properties.mouse_cell_x,properties.mouse_cell_y);
+    if(properties.mouse_cell_highlight)
+    {
+        invalidateOverlay();
+        redraw();
+    }
+    QWidget::mouseMoveEvent( event );
+}
+
 void TiledImageView::draw(const QImage& image, int x, int y)
 {
     QPainter painter(&cached_pixmap);
@@ -403,16 +421,15 @@ void TiledImageView::renderOverlay()
     int grid_size_y_scale = properties.grid_size_y * properties.zoom;
 
     if (properties.grid_enabled)
-    {
         renderGrid(cached_overlay, grid_size_x_scale, grid_size_y_scale, properties.grid_color);
-    }
 
     if(properties.indices_enabled)
-    {
         renderTileIndices(cached_overlay, grid_size_x_scale, grid_size_y_scale, properties.text_fg_color, properties.text_bg_color);
-    }
 
     renderCellHighlight(cached_overlay, grid_size_x_scale, grid_size_y_scale, properties.highlight_color, properties.cell_highlight_x, properties.cell_highlight_y);
+
+    if(properties.mouse_cell_highlight)
+        renderCellHighlight(cached_overlay, grid_size_x_scale, grid_size_y_scale, properties.highlight_color, properties.mouse_cell_x, properties.mouse_cell_y);
 
     cached_overlay = cached_overlay.scaled(cached_overlay.width(), cached_overlay.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
 }
