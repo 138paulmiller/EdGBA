@@ -984,8 +984,24 @@ void Map::renderTile(QImage& out_image, int x, int y, int tile_width, int tile_h
         out_image.fill(Qt::transparent);
     }
 
+    QVector<QRgb> color_table;
     Palette* tileset_palette = game->getTilesetPalette();
-    out_image.setColorTable(*tileset_palette);
+    if(tileset_palette)
+        color_table.append(*tileset_palette);
+
+    color_table.append(Qt::transparent);
+    out_image.setColorTable(color_table);
+
+    // Reset tile
+    const int mapx = x * GBA_TILE_SIZE;
+    const int mapy = y * GBA_TILE_SIZE;
+    for (int i = 0; i < tile_width; i++)
+    {
+        for (int j = 0; j < tile_height; j++)
+        {
+            out_image.setPixel(mapx + i, mapy + j, color_table.size()-1); //set to transparent
+        }
+    }
 
     for(int priority = GBA_PRIORITY_COUNT-1; priority >= 0; --priority)
     {

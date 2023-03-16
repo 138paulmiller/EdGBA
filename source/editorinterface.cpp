@@ -5,6 +5,7 @@
 
 EditContext::EditContext()
 {
+    game = nullptr;
     reset();
 }
 
