@@ -38,7 +38,7 @@ void SpriteEditor::setup(MainWindow* window)
     sprite_model = new SpriteModel(this);
     sprite_view = ui->sprite_view;
     sprite_view->setModel(sprite_model);
-    spritesheet_view->setMouseHighlightEnabled(false);
+    sprite_view->setMouseHighlightEnabled(false);
 
     spritesheet_model = new SpriteSheetModel(this);
     spritesheet_view = ui->spritesheet_view;
