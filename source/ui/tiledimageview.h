@@ -85,6 +85,7 @@ public:
     int getGridSizeY();
     void setGrid(QColor grid_color, int grid_size_x, int grid_size_y);
     void setGridEnabled(bool is_enabled);
+    void setMouseHighlightEnabled(bool is_enabled);
     void toggleGrid();
 
     void setIndicesEnabled(bool is_enabled);

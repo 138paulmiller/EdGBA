@@ -313,6 +313,11 @@ void TiledImageView::setGridEnabled(bool is_enabled)
     properties.grid_enabled = is_enabled;
 }
 
+void TiledImageView::setMouseHighlightEnabled(bool is_enabled)
+{
+    properties.mouse_cell_highlight = is_enabled;
+}
+
 void TiledImageView::toggleGrid()
 {
     properties.grid_enabled = !properties.grid_enabled;
