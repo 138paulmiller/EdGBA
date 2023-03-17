@@ -46,7 +46,9 @@ public:
     MainWindow(QApplication* app);
     ~MainWindow();
 
-    void setupUI(Ui_MainWindow* ui);
+    void setup();
+    void setupEditors();
+
     void saveSession();
     void loadSession();
     void markDirty();

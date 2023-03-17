@@ -71,6 +71,18 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab_images">
+         <attribute name="title">
+          <string>Images</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="TiledImageEditor" name="images_editor" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_2"/>
+           </widget>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="tab_sprite">
          <attribute name="title">
           <string>Sprites</string>
@@ -402,6 +414,12 @@
    <class>SpriteEditor</class>
    <extends>QWidget</extends>
    <header>editors/spriteeditor.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TiledImageEditor</class>
+   <extends>QWidget</extends>
+   <header>editors/tiledimageeditor.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

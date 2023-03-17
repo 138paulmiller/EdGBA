@@ -18,14 +18,16 @@ MainWindow::MainWindow(QApplication* parent_app)
     : ui(new Ui_MainWindow())
 {
     app = parent_app;
-    project_dirname_valid = false;
     setWindowTitle(EDGBA_TITLE);
     setMouseTracking(true);
 
     ui->setupUi(this);
-    setupUI(ui);
+    setup();
+
+    project_dirname_valid = false;
     emuprocess = nullptr;
     rom_compiler = nullptr;
+
     edit_context.setGame(new Game());
 }
 
@@ -40,20 +42,30 @@ MainWindow::~MainWindow()
     }
 }
 
-/* set up all the signal and slot triggers for each action */
-void MainWindow::setupUI(Ui_MainWindow* ui)
+void MainWindow::setupEditors()
 {
     editors.clear();
+    editors.fill(0, ui->tabview_editor->count());
     editors.insert(ui->tabview_editor->indexOf(ui->tab_map), ui->map_editor);
+    editors.insert(ui->tabview_editor->indexOf(ui->tab_images), ui->images_editor);
     editors.insert(ui->tabview_editor->indexOf(ui->tab_sprite), ui->sprite_editor);
     editors.insert(ui->tabview_editor->indexOf(ui->tab_code), ui->code_editor);
 
     for(int i = 0; i < editors.size(); ++i)
     {
-        editors[i]->edit_context = &edit_context;
-        editors[i]->setup(this);
+        if(EditorInterface* editor = editors[i])
+        {
+            editor->edit_context = &edit_context;
+            editor->setup(this);
+        }
     }
+
     ui->tabview_editor->setCurrentIndex(0);
+}
+
+void MainWindow::setup()
+{
+    setupEditors();
 
     // Create collapsible section's layout
     QVBoxLayout* collapsible_layout = new QVBoxLayout();
@@ -75,20 +87,20 @@ void MainWindow::setupUI(Ui_MainWindow* ui)
     ui->collapsible_section->setContentLayout(collapsible_layout);
 
     // Setup actions
-    QObject::connect(ui->action_open, SIGNAL(triggered()), this, SLOT(on_open()));
-    QObject::connect(ui->action_save, SIGNAL(triggered()), this, SLOT(on_save()));
-    QObject::connect(ui->action_save_as, SIGNAL(triggered()), this, SLOT(on_saveAs()));
-    QObject::connect(ui->action_new_game, SIGNAL(triggered()), this, SLOT(on_new()));
-    QObject::connect(ui->action_quit, SIGNAL(triggered()), this, SLOT(on_quit()));
-    QObject::connect(ui->action_undo, SIGNAL(triggered()), this, SLOT(on_undo()));
-    QObject::connect(ui->action_redo, SIGNAL(triggered()), this, SLOT(on_redo()));
-    QObject::connect(ui->action_zoom_in, SIGNAL(triggered()), this, SLOT(on_zoomIn()));
-    QObject::connect(ui->action_zoom_out, SIGNAL(triggered()), this, SLOT(on_zoomOut()));
-    QObject::connect(ui->action_run, SIGNAL(triggered()), this, SLOT(on_run()));
-    QObject::connect(ui->action_set_gba_emulator, SIGNAL(triggered()), this, SLOT(on_setGBAEmulator()));
-    QObject::connect(ui->action_set_devkitarm_path, SIGNAL(triggered()), this, SLOT(on_setDevKitProPath()));
-    QObject::connect(ui->action_toggle_dark_mode, SIGNAL(triggered(bool)), this, SLOT(on_setDarkMode(bool)));
-    QObject::connect(ui->action_build_settings, SIGNAL(triggered()), this, SLOT(on_openBuildSettings()));
+    QObject::connect(ui->action_open,       SIGNAL(triggered()), this, SLOT(on_open()));
+    QObject::connect(ui->action_save,       SIGNAL(triggered()), this, SLOT(on_save()));
+    QObject::connect(ui->action_save_as,    SIGNAL(triggered()), this, SLOT(on_saveAs()));
+    QObject::connect(ui->action_new_game,   SIGNAL(triggered()), this, SLOT(on_new()));
+    QObject::connect(ui->action_quit,       SIGNAL(triggered()), this, SLOT(on_quit()));
+    QObject::connect(ui->action_undo,       SIGNAL(triggered()), this, SLOT(on_undo()));
+    QObject::connect(ui->action_redo,       SIGNAL(triggered()), this, SLOT(on_redo()));
+    QObject::connect(ui->action_zoom_in,    SIGNAL(triggered()), this, SLOT(on_zoomIn()));
+    QObject::connect(ui->action_zoom_out,   SIGNAL(triggered()), this, SLOT(on_zoomOut()));
+    QObject::connect(ui->action_run,        SIGNAL(triggered()), this, SLOT(on_run()));
+    QObject::connect(ui->action_set_gba_emulator,   SIGNAL(triggered()),        this, SLOT(on_setGBAEmulator()));
+    QObject::connect(ui->action_set_devkitarm_path, SIGNAL(triggered()),        this, SLOT(on_setDevKitProPath()));
+    QObject::connect(ui->action_toggle_dark_mode,   SIGNAL(triggered(bool)),    this, SLOT(on_setDarkMode(bool)));
+    QObject::connect(ui->action_build_settings,     SIGNAL(triggered()),        this, SLOT(on_openBuildSettings()));
 
     // Setup the styles. Set all of the icons
     Utils::setupAction(ui->action_new_game      , ":/edgba/icons/new.png");
@@ -119,6 +131,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
         event->ignore();
         return;
     }
+
     event->accept();
 }
 
@@ -126,9 +139,7 @@ bool MainWindow::checkSave()
 {
     Game* game = edit_context.getGame();
     if(game == nullptr || !game->isDirty())
-    {
         return true;
-    }
 
     QMessageBox msgBox;
     msgBox.setWindowTitle(EDGBA_TITLE);
@@ -171,8 +182,11 @@ void MainWindow::openGame(QString project_file)
     syncActionEnabledState();
     for(int i = 0; i < editors.size(); ++i)
     {
-        editors[i]->reset();
-        editors[i]->reload();
+        if(EditorInterface* editor = editors[i])
+        {
+            editors[i]->reset();
+            editors[i]->reload();
+        }
     }
 
     game->save();
@@ -235,16 +249,9 @@ EditorInterface* MainWindow::activeEditor() const
 
 void MainWindow::syncActionEnabledState()
 {
-    if(ui == nullptr)
-    {
-        return;
-    }
-
     Game* game = edit_context.getGame();
-    if(game == nullptr)
-    {
+    if(ui == nullptr || game == nullptr)
         return;
-    }
 
     bool enabled = game->isValid();
     ui->action_save->setEnabled(enabled);
@@ -267,92 +274,67 @@ void MainWindow::markDirty()
 void MainWindow::on_new()
 {
     if (!checkSave())
-    {
         return;
-    }
 
     QString project_path = QFileDialog::getExistingDirectory(this, tr("Select EdGBA Game Directory"));
     if(project_path.size())
-    {
         newGame(project_path);
-    }
 }
 
 void MainWindow::on_open()
 {
     if (!checkSave())
-    {
         return;
-    }
+
     QString project_file = QFileDialog::getOpenFileName(this, tr("Open EdGBA Game"), "", tr("EdGBA Game(*." EDGBA_FILE_EXT ")"));
     if(project_file.size())
-    {
         openGame(project_file);
-    }
 }
 
 void MainWindow::on_save()
 {
     if (project_dirname_valid)
-    {
         saveGame("");
-    }
     else
-    {
         on_saveAs();
-    }
 }
 
 void MainWindow::on_saveAs()
 {
     QString project_path = QFileDialog::getExistingDirectory(this, tr("Save EdGBA Game"));
     if(project_path.size())
-    {
         saveGame(project_path);
-    }}
+}
 
 void MainWindow::on_quit()
 {
     if (checkSave())
-    {
         app->exit();
-    }
 }
 
 void MainWindow::on_undo()
 {
-    EditorInterface* editor = activeEditor();
-    if(editor)
-    {
+    if(EditorInterface* editor = activeEditor())
         editor->undo();
-    }
 }
 
 void MainWindow::on_redo()
 {
-    EditorInterface* editor = activeEditor();
-    if(editor)
-    {
+    if(EditorInterface* editor = activeEditor())
         editor->redo();
-    }
 }
 
 void MainWindow::on_zoomIn()
 {
-    EditorInterface* editor = activeEditor();
-    if(editor)
-    {
+    if(EditorInterface* editor = activeEditor())
         editor->zoomIn();
-    }
 }
 
 void MainWindow::on_zoomOut()
 {
     EditorInterface* editor = activeEditor();
     if(editor)
-    {
         editor->zoomOut();
-    }
 }
 
 void MainWindow::on_run()
@@ -400,19 +382,16 @@ void MainWindow::on_romCompileFinished(bool success, QString rom_file)
         emuprocess = new QProcess();
         QObject::connect(emuprocess, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(on_emuFinished(int,QProcess::ExitStatus)));
     }
+
     emuprocess->start(emu_path, { rom_file });
 }
 
 void MainWindow::on_emuFinished(int exit_code, QProcess::ExitStatus exit_status)
 {
     if(exit_status == QProcess::CrashExit)
-    {
         msgWarn("ROM") << "Emulator crashed!\n";
-    }
     else
-    {
         msgLog("ROM") << "Emulator exited code " << exit_code << "\n";
-    }
 }
 
 void MainWindow::on_messageClear(bool)
@@ -457,6 +436,7 @@ void MainWindow::on_setDarkMode(bool is_dark_mode)
         QTextStream ts(&file);
         app->setStyleSheet(ts.readAll());
     }
+
     Config::set(CONFIG_KEY_DARK_MODE, QString::number(is_dark_mode ? 1 : 0));
     Config::save();
 }

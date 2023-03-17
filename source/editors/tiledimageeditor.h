@@ -20,10 +20,10 @@ private:
 
     bool skip_sync;
 
-    TiledImageModel* image_model;
-    TiledImageView* image_view;
-    QComboBox* image_names_combo;
-    QStringListModel* image_names_model;
+    TiledImageModel* tiledimage_model;
+    TiledImageView* tiledimage_view;
+    QComboBox* tiledimage_names_combo;
+    QStringListModel* tiledimage_names_model;
 
     NewNameDialog* editname_dialog;
 
@@ -41,9 +41,15 @@ public:
     void zoomOut() override;
     // End EditorInterface
 
+protected slots:
+    void on_tiledimageAdd(bool);
+    void on_tiledimageRemove(bool);
+    void on_tiledimageEditName(bool);
+    void on_tiledimageLoad(bool);
+
 private:
     class Ui_TiledImageEditor* ui;
     class MainWindow* main_window;
 };
 
-#endif // SPRITEEDITOR_H
+#endif // TILEDIMAGEEDITOR_H

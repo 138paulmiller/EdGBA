@@ -48,8 +48,11 @@
 	- Fill tool
 	- Tile Selection hotkeys to quickly move selection rect
 	
-[] Image Editor Tab
+[] Pixel Image Editor Tab
 	- Simple interfacae to handle raw image data
+
+[] Assets Editor
+	- Simple asset editor to load, rename, add, remove the various asset types
 
 [] TiledImage Editor
 	- Create an editor for tilesets, spritesheets
