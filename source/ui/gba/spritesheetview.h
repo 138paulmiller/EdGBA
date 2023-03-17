@@ -1,8 +1,8 @@
 #ifndef SPRITESHEETVIEW_H
 #define SPRITESHEETVIEW_H
 
-#include <ui/tiledimageview.h>
 #include <gba/spritesheet.h>
+#include <ui/gba/tiledimageview.h>
 
 class SpriteSheetModel : public TiledImageModel
 {

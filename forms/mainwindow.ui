@@ -383,25 +383,25 @@
   <customwidget>
    <class>CodeEditor</class>
    <extends>QWidget</extends>
-   <header>codeeditor/codeeditor.h</header>
+   <header>editors/codeeditor.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>MapEditor</class>
    <extends>QWidget</extends>
-   <header>mapeditor/mapeditor.h</header>
+   <header>editors/mapeditor.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>CollapsibleSection</class>
    <extends>QWidget</extends>
-   <header>ui/collapsiblesection.h</header>
+   <header>ui/misc/collapsiblesection.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>SpriteEditor</class>
    <extends>QWidget</extends>
-   <header>spriteeditor/spriteeditor.h</header>
+   <header>editors/spriteeditor.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

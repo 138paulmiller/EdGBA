@@ -526,18 +526,18 @@
   <customwidget>
    <class>AssetControls</class>
    <extends>QWidget</extends>
-   <header location="global">ui/assetcontrols.h</header>
+   <header location="global">ui/misc/assetcontrols.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>MapView</class>
    <extends>QGraphicsView</extends>
-   <header>mapeditor/mapview.h</header>
+   <header>ui/gba/mapview.h</header>
   </customwidget>
   <customwidget>
    <class>TilesetView</class>
    <extends>QGraphicsView</extends>
-   <header>tileseteditor/tilesetview.h</header>
+   <header>ui/gba/tilesetview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

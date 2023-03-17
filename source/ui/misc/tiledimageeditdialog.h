@@ -1,7 +1,7 @@
 #ifndef TILEDIMAGEEDITDIALOG_H
 #define TILEDIMAGEEDITDIALOG_H
 
-#include "ui/tiledimageview.h"
+#include <ui/gba/tiledimageview.h>
 #include "ui_tiledimageeditdialog.h"
 
 #include <QDialog>

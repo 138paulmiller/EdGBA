@@ -79,7 +79,7 @@
   <customwidget>
    <class>TiledImageView</class>
    <extends>QGraphicsView</extends>
-   <header>ui/tiledimageview.h</header>
+   <header>ui/gba/tiledimageview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

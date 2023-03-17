@@ -2,7 +2,7 @@
 #define MAPVIEW_h
 
 #include <gba/map.h>
-#include <ui/tiledimageview.h>
+#include <ui/gba/tiledimageview.h>
 
 class MapModel : public TiledImageModel
 {

@@ -3,7 +3,7 @@
 
 #include <mainwindow.h>
 #include <ui/utils.h>
-#include <ui/newnamedialog.h>
+#include <ui/misc/newnamedialog.h>
 #include <defines.h>
 
 #include <QFileDialog>

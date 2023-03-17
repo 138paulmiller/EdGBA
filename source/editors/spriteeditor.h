@@ -1,15 +1,15 @@
 #ifndef SPRITEEDITOR_H
 #define SPRITEEDITOR_H
 
-#include "spriteview.h"
-#include "spritesheetview.h"
+#include <ui/gba/spriteview.h>
+#include <ui/gba/spritesheetview.h>
 
 #include <QWidget>
 #include <QComboBox>
 #include <QStringListModel>
 
 #include <gba/spritesheet.h>
-#include <ui/tiledimageeditdialog.h>
+#include <ui/misc/tiledimageeditdialog.h>
 #include <editorinterface.h>
 
 class NewNameDialog;

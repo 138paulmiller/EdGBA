@@ -1,10 +1,9 @@
 #ifndef CODEEDITOR_H
 #define CODEEDITOR_H
 
-#include "codeview.h"
-
 #include <gba/game.h>
 #include <editorinterface.h>
+#include <ui/gba/codeview.h>
 
 #include <QTextBrowser>
 #include <QTreeView>

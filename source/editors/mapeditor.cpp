@@ -6,9 +6,9 @@
 #include "ui_mapeditor.h"
 
 #include <mainwindow.h>
-#include <ui/newmapdialog.h>
-#include <ui/newnamedialog.h>
-#include <ui/tiledimageeditdialog.h>
+#include <ui/misc/newmapdialog.h>
+#include <ui/misc/newnamedialog.h>
+#include <ui/misc/tiledimageeditdialog.h>
 
 #include <QDialog>
 #include <QMessageBox>

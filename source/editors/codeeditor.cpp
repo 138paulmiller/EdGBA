@@ -3,7 +3,7 @@
 
 #include <config.h>
 #include <ui/utils.h>
-#include <ui/newnamedialog.h>
+#include <ui/misc/newnamedialog.h>
 
 #include <QMenu>
 #include <QAction>
@@ -12,7 +12,7 @@
 #include <QScrollBar>
 
 #include "ui_codeeditor.h"
-#include "ui/collapsiblesection.h"
+#include "ui/misc/collapsiblesection.h"
 
 #define CONFIG_SESSION_SOURCEFILES "session_sourcefiles"
 

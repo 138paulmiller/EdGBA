@@ -1,8 +1,8 @@
 #ifndef TILESETVIEW_H
 #define TILESETVIEW_H
 
-#include <ui/tiledimageview.h>
 #include <gba/tileset.h>
+#include <ui/gba/tiledimageview.h>
 
 class TilesetModel : public TiledImageModel
 {

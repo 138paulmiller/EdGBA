@@ -77,7 +77,7 @@
   <customwidget>
    <class>CodeView</class>
    <extends>QPlainTextEdit</extends>
-   <header>codeeditor/codeview.h</header>
+   <header>ui/gba/codeview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

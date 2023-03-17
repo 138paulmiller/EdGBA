@@ -5,7 +5,7 @@
 #include "msglog.h"
 
 #include <ui/utils.h>
-#include <ui/configmenu.h>
+#include <ui/misc/configmenu.h>
 
 #include <stdio.h>
 #include <QMouseEvent>

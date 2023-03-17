@@ -3,9 +3,8 @@
 
 #include <gba/game.h>
 #include <editorinterface.h>
-#include <tileseteditor/tilesetview.h>
-
-#include "mapview.h"
+#include <ui/gba/mapview.h>
+#include <ui/gba/tilesetview.h>
 
 #include <QStringList>
 #include <QStringListModel>

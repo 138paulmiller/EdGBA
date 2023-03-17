@@ -3,9 +3,9 @@
 
 #include <QVector>
 #include <QTimer>
-#include <ui/tiledimageview.h>
 #include <gba/spriteanim.h>
 #include <gba/spritesheet.h>
+#include <ui/gba/tiledimageview.h>
 
 class SpriteModel : public TiledImageModel
 {
