@@ -70,7 +70,6 @@ protected:
 private slots:
     void setText(const QString& text);
     void updateGutterWidth(int newBlockCount);
-    void highlightCurrentLine();
     void updateGutter(const QRect &rect, int dy);
 };
 

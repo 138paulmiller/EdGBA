@@ -94,8 +94,6 @@ void CodeHighlighter::reset()
 
 void CodeHighlighter::highlightBlock(const QString &text)
 {
-    //if(code_view->visibleRegion().isEmpty()) return;
-
     foreach(const HighlightingRule &rule, highlight_rules)
     {
         QRegularExpressionMatchIterator it = rule.pattern.globalMatch(text);
@@ -142,11 +140,9 @@ CodeView::CodeView(QWidget *parent)
 {
     connect(this, &CodeView::blockCountChanged, this, &CodeView::updateGutterWidth);
     connect(this, &CodeView::updateRequest, this, &CodeView::updateGutter);
-    connect(this, &CodeView::cursorPositionChanged, this, &CodeView::highlightCurrentLine);
 
     setupFont();
     updateGutterWidth(0);
-    highlightCurrentLine();
 }
 
 CodeView::~CodeView()
@@ -158,7 +154,6 @@ void CodeView::setText(const QString& text)
 {
     textCursor().setPosition(0);
     updateGutterWidth(0);
-    highlightCurrentLine();
     setPlainText(text);
 }
 
@@ -206,25 +201,6 @@ void CodeView::resizeEvent(QResizeEvent *e)
 
     QRect cr = contentsRect();
     gutter->setGeometry(QRect(cr.left(), cr.top(), gutterWidth(), cr.height()));
-}
-
-void CodeView::highlightCurrentLine()
-{
-    return;
-    QList<QTextEdit::ExtraSelection> extraSelections;
-    if (!isReadOnly() && !document()->isEmpty()) {
-        QTextEdit::ExtraSelection selection;
-
-        QColor lineColor = QColor(Qt::blue).lighter(160);
-
-        selection.format.setBackground(lineColor);
-        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
-        selection.cursor = textCursor();
-        selection.cursor.clearSelection();
-        extraSelections.append(selection);
-    }
-
-    setExtraSelections(extraSelections);
 }
 
 void CodeView::setupFont()

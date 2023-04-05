@@ -16,21 +16,23 @@
 #define COMPILE_CATEGORY "ROM"
 
 // Tools
-const char* default_cc      = "%{OS}/devkitPro/devkitARM/bin/arm-none-eabi-gcc";
-const char* default_ld      = "%{OS}/devkitPro/devkitARM/bin/arm-none-eabi-gcc";
-const char* default_objcopy = "%{OS}/devkitPro/devkitARM/bin/arm-none-eabi-objcopy";
-const char* default_fix     = "%{OS}/devkitPro/tools/bin/gbafix";
+const char* default_cc      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-gcc";
+const char* default_ld      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-gcc";
+const char* default_as      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-as";
+const char* default_objcopy = "%{OS}/arm-none-eabi/bin/arm-none-eabi-objcopy";
+const char* default_fix     = "%{OS}/tools/gbafix";
 
 // Flags
-const char* default_cflags    = "-Wall -fomit-frame-pointer -ffast-math -O3"; //"-MMD" << "-MP" << "-MF" << "-Wall" << "-O3" << "-fomit-frame-pointer" << "-ffast-math";
-const char* default_ldflags   = "-specs=gba.specs"; //-nostartfiles
+const char* default_cflags    = "-Wall -fomit-frame-pointer -ffast-math -O3";
+const char* default_ldflags   = "-specs=gba.specs";
 const char* default_libs      = "-lm";
 const char* default_includes  = "-I%{GENERATED} -I%{CODE}";
-const char* default_arch      = "-mcpu=arm7tdmi"; //"-mthumb" << "-mthumb-interwork" <<"-mtune=arm7tdmi"
-const char* default_rom       = "%{PROJECT}%{GAME}.gba"; //"-mthumb" << "-mthumb-interwork" <<"-mtune=arm7tdmi"
+const char* default_arch      = "-mcpu=arm7tdmi";
+const char* default_rom       = "%{PROJECT}%{GAME}.gba";
 
 // Steps
 const char* default_compile_step = "%{CC} %{ARCH} %{INCLUDES} %{CFLAGS} -c %{SOURCE} -o %{OBJECT}";
+const char* default_assemble_step = "%{AS} %{ARCH} %{SOURCE} -o %{OBJECT}";
 const char* default_link_step    = "%{LD} %{ARCH} %{LDFLAGS} %{OBJECTS} -o %{TEMP}%{GAME}.elf %{LIBS}";
 const char* default_objcopy_step = "%{OBJCOPY} -O binary %{TEMP}%{GAME}.elf %{ROM}";
 const char* default_fix_step     = "%{FIX} %{ROM}";
@@ -41,6 +43,7 @@ QString getDefaultValue(QString key)
     if(build_defaults.size() == 0)
     {
         build_defaults[BUILD_CC] = default_cc;
+        build_defaults[BUILD_AS] = default_as;
         build_defaults[BUILD_LD] = default_ld;
         build_defaults[BUILD_OBJCOPY] = default_objcopy;
         build_defaults[BUILD_FIX] = default_fix;
@@ -52,6 +55,7 @@ QString getDefaultValue(QString key)
         build_defaults[BUILD_ROM] = default_rom;
 
         build_defaults[BUILD_STEP_COMPILE] = default_compile_step;
+        build_defaults[BUILD_STEP_ASSEMBLE] = default_assemble_step;
         build_defaults[BUILD_STEP_LINK] = default_link_step;
         build_defaults[BUILD_STEP_OBJCOPY] = default_objcopy_step;
         build_defaults[BUILD_STEP_FIX] = default_fix_step;
@@ -65,6 +69,7 @@ QString getDefaultValue(QString key)
 void RomCompiler::resetDefaults()
 {
     Config::remove(BUILD_CC);
+    Config::remove(BUILD_AS);
     Config::remove(BUILD_LD);
     Config::remove(BUILD_OBJCOPY);
     Config::remove(BUILD_FIX);
@@ -77,6 +82,7 @@ void RomCompiler::resetDefaults()
     Config::remove(BUILD_ROM);
 
     Config::remove(BUILD_STEP_COMPILE);
+    Config::remove(BUILD_STEP_ASSEMBLE);
     Config::remove(BUILD_STEP_LINK);
     Config::remove(BUILD_STEP_OBJCOPY);
     Config::remove(BUILD_STEP_FIX);
@@ -121,6 +127,14 @@ void RomCompilerWorker::run(RomCompileArgs args)
             emit finished(false, rom_file);
 
         emit finished(true, rom_file);
+        return;
+    }
+
+    emit log(COMPILE_CATEGORY, "Assembling code...\n");
+
+    if(!assemble(args.sourcefiles))
+    {
+        emit finished(false, rom_file);
         return;
     }
 
@@ -232,6 +246,9 @@ bool RomCompilerWorker::compile(const QStringList& sourcefiles)
 {
     foreach(QString sourcefile, sourcefiles)
     {
+        if(QFileInfo(sourcefile).suffix() != "c")
+            continue;
+
         QString objectfile;
         if(!getObjectFile(sourcefile, objectfile)) continue;
 
@@ -241,6 +258,40 @@ bool RomCompilerWorker::compile(const QStringList& sourcefiles)
         QString program;
         QStringList program_args;
         buildProgramCommand(args.compile_step, program, program_args);
+
+        args.variables.remove("%{SOURCE}");
+        args.variables.remove("%{OBJECT}");
+
+        if(runtool(program, program_args) != 0)
+        {
+            return false;
+        }
+
+        if(!args.variables.contains("%{OBJECTS}"))
+            args.variables["%{OBJECTS}"] = objectfile;
+        else
+            args.variables["%{OBJECTS}"] += " " + objectfile;
+
+    }
+    return true;
+}
+
+bool RomCompilerWorker::assemble(const QStringList& sourcefiles)
+{
+    foreach(QString sourcefile, sourcefiles)
+    {
+        if(QFileInfo(sourcefile).suffix() != "s")
+            continue;
+
+        QString objectfile;
+        if(!getObjectFile(sourcefile, objectfile)) continue;
+
+        args.variables["%{SOURCE}"] = sourcefile;
+        args.variables["%{OBJECT}"] = objectfile;
+
+        QString program;
+        QStringList program_args;
+        buildProgramCommand(args.assemble_step, program, program_args);
 
         args.variables.remove("%{SOURCE}");
         args.variables.remove("%{OBJECT}");
@@ -303,7 +354,7 @@ bool RomCompilerWorker::customBuild()
 bool RomCompilerWorker::getObjectFile(const QString& source_file, QString& out_object_file) const
 {
     QFileInfo info(source_file);
-    if(info.suffix() != "c" && info.suffix() != "S")
+    if(info.suffix() != "c" && info.suffix() != "s")
     {
         out_object_file = "";
         return false;
@@ -412,6 +463,7 @@ void RomCompiler::setup(Game* game, RomCompileArgs& args)
 #endif
 
     args.variables["%{CC}"]         = getConfig(BUILD_CC);
+    args.variables["%{AS}"]         = getConfig(BUILD_AS);
     args.variables["%{LD}"]         = getConfig(BUILD_LD);
     args.variables["%{OBJCOPY}"]    = getConfig(BUILD_OBJCOPY);
     args.variables["%{FIX}"]        = getConfig(BUILD_FIX);
@@ -423,29 +475,11 @@ void RomCompiler::setup(Game* game, RomCompileArgs& args)
     args.variables["%{ROM}"]        = getConfig(BUILD_ROM);
 
     args.compile_step  = getConfig(BUILD_STEP_COMPILE);
+    args.assemble_step  = getConfig(BUILD_STEP_ASSEMBLE);
     args.link_step     = getConfig(BUILD_STEP_LINK);
     args.objcopy_step  = getConfig(BUILD_STEP_OBJCOPY);
     args.fix_step      = getConfig(BUILD_STEP_FIX);
     args.custom_step   = getConfig(BUILD_CUSTOM);
-}
-
-QString RomCompiler::getDevKitProPath() const
-{
-    QString os_path;
-#ifdef _WIN32
-    os_path = "win32/";
-#endif
-
-    const QString default_devkitpro_path = Common::getExePath(os_path + EDITOR_DEVKITPRO_PATH);
-    QString devkitpro_path = Common::getSystemVariable("DEVKITPRO", default_devkitpro_path);
-    if(!Common::dirExists(devkitpro_path))
-    {
-        if(Common::dirExists(default_devkitpro_path))
-        {
-            devkitpro_path = default_devkitpro_path;
-        }
-    }
-    return Common::absolutePath(devkitpro_path);
 }
 
 void RomCompiler::on_workerLog(QString category, QString log)

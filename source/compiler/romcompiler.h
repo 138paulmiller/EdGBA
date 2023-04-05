@@ -6,6 +6,7 @@
 #include <QThread>
 
 #define BUILD_CC       "BUILD_CC"
+#define BUILD_AS       "BUILD_AS"
 #define BUILD_LD       "BUILD_LD"
 #define BUILD_OBJCOPY  "BUILD_OBJCOPY"
 #define BUILD_FIX      "BUILD_FIX"
@@ -16,6 +17,7 @@
 #define BUILD_ARCH     "BUILD_ARCH"
 #define BUILD_ROM      "BUILD_ROM"
 #define BUILD_STEP_COMPILE  "BUILD_STEP_CC"
+#define BUILD_STEP_ASSEMBLE "BUILD_STEP_AS"
 #define BUILD_STEP_LINK     "BUILD_STEP_LD"
 #define BUILD_STEP_OBJCOPY  "BUILD_STEP_OBJCOPY"
 #define BUILD_STEP_FIX      "BUILD_STEP_FIX"
@@ -29,6 +31,7 @@ struct RomCompileArgs
     QStringList sourcefiles;   // %{SOURCES}, also provides %{SOURCE} and %{OBJECT} for link and compile
 
     QString compile_step;
+    QString assemble_step;
     QString link_step;
     QString objcopy_step;
     QString fix_step;
@@ -60,6 +63,7 @@ private:
     bool setup();
 
     bool compile(const QStringList& sourcefiles);
+    bool assemble(const QStringList& sourcefiles);
     bool link();
     bool objcopy();
     bool fixup();
@@ -93,7 +97,6 @@ public:
 
 private:
     void setup(Game* game, RomCompileArgs& args);
-    QString getDevKitProPath() const;
 
 signals:
     void started(RomCompileArgs args);

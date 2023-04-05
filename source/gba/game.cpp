@@ -115,7 +115,7 @@ void Game::reloadSourceFiles()
     source_files.clear();
 
     QStringList filters;
-    filters << "*.c" << "*.h";
+    filters << "*.s" << "*.c" << "*.h";
     QString dir = getAbsoluteCodePath();
     QDirIterator it(dir, filters, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext())
