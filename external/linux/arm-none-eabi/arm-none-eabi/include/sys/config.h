@@ -4,11 +4,19 @@
 #include <machine/ieeefp.h>  /* floating point macros */
 #include <sys/features.h>	/* POSIX defs */
 
-/* we want the reentrancy structure to be returned by a function */
+#ifdef __DEVKITARM__
 #define __DYNAMIC_REENT__
+#endif
 
-#ifdef __aarch64__
+#ifdef __DEVKITA64__
 #define MALLOC_ALIGNMENT 16
+#define __DYNAMIC_REENT__
+#endif
+
+#ifdef __DEVKITPPC__
+#define __BUFSIZ__ 32768
+#define MALLOC_ALIGNMENT 64
+#define __DYNAMIC_REENT__
 #endif
 
 #ifdef __AMDGCN__
@@ -245,8 +253,6 @@
 #define __FILENAME_MAX__ 255
 #define _READ_WRITE_RETURN_TYPE _ssize_t
 #define __DYNAMIC_REENT__
-#define _REENT_GLOBAL_ATEXIT
-#define _REENT_GLOBAL_STDIO_STREAMS
 #endif
 
 #ifndef __EXPORT
@@ -284,12 +290,6 @@
 #endif
 #endif
 
-#ifdef _WANT_REENT_GLOBAL_STDIO_STREAMS
-#ifndef _REENT_GLOBAL_STDIO_STREAMS
-#define _REENT_GLOBAL_STDIO_STREAMS
-#endif
-#endif
-
 #ifdef _WANT_USE_LONG_TIME_T
 #ifndef _USE_LONG_TIME_T
 #define _USE_LONG_TIME_T
@@ -299,6 +299,18 @@
 #ifdef _WANT_USE_GDTOA
 #ifndef _USE_GDTOA
 #define _USE_GDTOA
+#endif
+#endif
+
+#ifdef _WANT_REENT_BACKWARD_BINARY_COMPAT
+#ifndef _REENT_BACKWARD_BINARY_COMPAT
+#define _REENT_BACKWARD_BINARY_COMPAT
+#endif
+#endif
+
+#ifdef _WANT_REENT_THREAD_LOCAL
+#ifndef _REENT_THREAD_LOCAL
+#define _REENT_THREAD_LOCAL
 #endif
 #endif
 

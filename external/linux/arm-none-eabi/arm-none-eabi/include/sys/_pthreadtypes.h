@@ -18,19 +18,18 @@
 #ifndef _SYS__PTHREADTYPES_H_
 #define	_SYS__PTHREADTYPES_H_
 
+#include <sys/features.h>
+
 #if defined(_POSIX_THREADS) || __POSIX_VISIBLE >= 199506
 
 #include <sys/sched.h>
+#include <sys/lock.h>
 
 /*
  *  2.5 Primitive System Data Types,  P1003.1c/D10, p. 19.
  */
 
-#if defined(__XMK__)
-typedef unsigned int pthread_t;          /* identify a thread */
-#else
-typedef __uint32_t pthread_t;            /* identify a thread */
-#endif
+typedef struct __pthread_t *pthread_t;   /* identify a thread */
 
 /* P1003.1c/D10, p. 118-119 */
 #define PTHREAD_SCOPE_PROCESS 0
@@ -46,25 +45,14 @@ typedef __uint32_t pthread_t;            /* identify a thread */
 #define PTHREAD_CREATE_DETACHED 0
 #define PTHREAD_CREATE_JOINABLE  1
 
-#if defined(__XMK__)
-typedef struct pthread_attr_s {
-  int contentionscope;
-  struct sched_param schedparam;
-  int  detachstate;
-  void *stackaddr;
-  size_t stacksize;
-} pthread_attr_t;
-
-#define PTHREAD_STACK_MIN       200
-
-#else /* !defined(__XMK__) */
 typedef struct {
-  int is_initialized;
   void *stackaddr;
   int stacksize;
+#if defined(_POSIX_THREAD_PRIORITY_SCHEDULING)
   int contentionscope;
   int inheritsched;
   int schedpolicy;
+#endif
   struct sched_param schedparam;
 
   /* P1003.4b/D8, p. 54 adds cputime_clock_allowed attribute.  */
@@ -73,8 +61,6 @@ typedef struct {
 #endif
   int  detachstate;
 } pthread_attr_t;
-
-#endif /* !defined(__XMK__) */
 
 #if defined(_POSIX_THREAD_PROCESS_SHARED)
 /* NOTE: P1003.1c/D10, p. 81 defines following values for process_shared.  */
@@ -143,18 +129,15 @@ typedef struct {
 
 #endif /* !defined(_UNIX98_THREAD_MUTEX_ATTRIBUTES) */
 
-#if defined(__XMK__)
-typedef unsigned int pthread_mutex_t;    /* identify a mutex */
-
 typedef struct {
   int type;
-} pthread_mutexattr_t;
-
-#else /* !defined(__XMK__) */
-typedef __uint32_t pthread_mutex_t;      /* identify a mutex */
+  union {
+    _LOCK_T normal;
+    _LOCK_RECURSIVE_T recursive;
+  };
+} pthread_mutex_t;      /* identify a mutex */
 
 typedef struct {
-  int   is_initialized;
 #if defined(_POSIX_THREAD_PROCESS_SHARED)
   int   process_shared;  /* allow mutex to be shared amongst processes */
 #endif
@@ -163,23 +146,25 @@ typedef struct {
   int   protocol;
 #endif
 #if defined(_UNIX98_THREAD_MUTEX_ATTRIBUTES)
-  int type;
+  int   type;
 #endif
-  int   recursive;
 } pthread_mutexattr_t;
-#endif /* !defined(__XMK__) */
 
-#define _PTHREAD_MUTEX_INITIALIZER ((pthread_mutex_t) 0xFFFFFFFF)
+#define _PTHREAD_MUTEX_INITIALIZER ((pthread_mutex_t){ PTHREAD_MUTEX_NORMAL, { .normal = __LOCK_INITIALIZER } })
+#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP ((pthread_mutex_t){ PTHREAD_MUTEX_RECURSIVE, { .recursive = __LOCK_INITIALIZER_RECURSIVE } })
+#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
 
 /* Condition Variables */
 
-typedef __uint32_t pthread_cond_t;       /* identify a condition variable */
+typedef struct {
+  clockid_t clock_id;
+  _COND_T   cond;
+} pthread_cond_t;       /* identify a condition variable */
 
-#define _PTHREAD_COND_INITIALIZER ((pthread_cond_t) 0xFFFFFFFF)
+#define _PTHREAD_COND_INITIALIZER ((pthread_cond_t){ CLOCK_REALTIME, __COND_INITIALIZER })
 
 typedef struct {
-  int      is_initialized;
-  clock_t  clock;             /* specifiy clock for timeouts */
+  clockid_t clock_id;         /* specifiy clock for timeouts */
 #if defined(_POSIX_THREAD_PROCESS_SHARED)
   int      process_shared;    /* allow this to be shared amongst processes */
 #endif
@@ -190,19 +175,23 @@ typedef struct {
 typedef __uint32_t pthread_key_t;        /* thread-specific data keys */
 
 typedef struct {
-  int   is_initialized;  /* is this structure initialized? */
-  int   init_executed;   /* has the initialization routine been run? */
+  int   status;         /* 0 = init not run, 1 = init running, 2 = init finished */
 } pthread_once_t;       /* dynamic package initialization */
 
-#define _PTHREAD_ONCE_INIT  { 1, 0 }  /* is initialized and not run */
+#define _PTHREAD_ONCE_INIT  { 0 }  /* not run */
 #endif /* defined(_POSIX_THREADS) || __POSIX_VISIBLE >= 199506 */
 
 /* POSIX Barrier Types */
 
 #if defined(_POSIX_BARRIERS)
-typedef __uint32_t pthread_barrier_t;        /* POSIX Barrier Object */
 typedef struct {
-  int   is_initialized;  /* is this structure initialized? */
+  _LOCK_T  lock;
+  _COND_T  cond;
+  unsigned reload;
+  unsigned counter;
+  unsigned cycle;
+} pthread_barrier_t;        /* POSIX Barrier Object */
+typedef struct {
 #if defined(_POSIX_THREAD_PROCESS_SHARED)
   int   process_shared;       /* allow this to be shared amongst processes */
 #endif
@@ -218,12 +207,17 @@ typedef __uint32_t pthread_spinlock_t;        /* POSIX Spin Lock Object */
 /* POSIX Reader/Writer Lock Types */
 
 #if defined(_POSIX_READER_WRITER_LOCKS)
-typedef __uint32_t pthread_rwlock_t;         /* POSIX RWLock Object */
+typedef struct {
+  _LOCK_T  lock;
+  _COND_T  cond_r;
+  _COND_T  cond_w;
+  uint32_t cnt_r : 30;
+  uint32_t cnt_w : 2;
+} pthread_rwlock_t;         /* POSIX RWLock Object */
 
-#define _PTHREAD_RWLOCK_INITIALIZER ((pthread_rwlock_t) 0xFFFFFFFF)
+#define _PTHREAD_RWLOCK_INITIALIZER ((pthread_rwlock_t){ __LOCK_INITIALIZER, __COND_INITIALIZER, __COND_INITIALIZER, 0, 0 })
 
 typedef struct {
-  int   is_initialized;       /* is this structure initialized? */
 #if defined(_POSIX_THREAD_PROCESS_SHARED)
   int   process_shared;       /* allow this to be shared amongst processes */
 #endif

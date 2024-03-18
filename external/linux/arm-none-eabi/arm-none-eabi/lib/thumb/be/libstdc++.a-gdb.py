@@ -1,5 +1,5 @@
 # -*- python -*-
-# Copyright (C) 2009-2022 Free Software Foundation, Inc.
+# Copyright (C) 2009-2023 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ import gdb
 import os
 import os.path
 
-pythondir = '/home/davem/projects/devkitpro/tool-packages/devkitARM/src/build/x86_64-linux-gnu/devkitARM/share/gcc-12.1.0/python'
+pythondir = '/home/davem/projects/devkitpro/tool-packages/devkitARM/src/build/x86_64-linux-gnu/devkitARM/share/gcc-13.2.0/python'
 libdir = '/home/davem/projects/devkitpro/tool-packages/devkitARM/src/build/x86_64-linux-gnu/devkitARM/arm-none-eabi/lib/thumb/be'
 
 # This file might be loaded when there is no current objfile.  This

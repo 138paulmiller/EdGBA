@@ -31,8 +31,8 @@ typedef struct Map
 	const struct Tileset* bg3_tileset;
 } Map;
 
-extern struct Map Map_Emerald_0;
 extern struct Map Map_Emerald_1;
+extern struct Map Map_Emerald_0;
 
 typedef struct Palette
 {
@@ -52,13 +52,13 @@ typedef struct SpriteAnim
 	const unsigned char* frames;
 } SpriteAnim;
 
-extern struct SpriteAnim Anim_PlayerDown;
-extern struct SpriteAnim Anim_PlayerLeft;
-extern struct SpriteAnim Anim_PlayerRight;
-extern struct SpriteAnim Anim_PlayerUp;
-extern struct SpriteAnim Anim_PlayerWalkDown;
-extern struct SpriteAnim Anim_PlayerWalkLeft;
 extern struct SpriteAnim Anim_PlayerWalkRight;
+extern struct SpriteAnim Anim_PlayerUp;
+extern struct SpriteAnim Anim_PlayerLeft;
+extern struct SpriteAnim Anim_PlayerWalkLeft;
+extern struct SpriteAnim Anim_PlayerWalkDown;
+extern struct SpriteAnim Anim_PlayerDown;
+extern struct SpriteAnim Anim_PlayerRight;
 extern struct SpriteAnim Anim_PlayerWalkUp;
 
 typedef struct SpriteSheet
@@ -78,7 +78,7 @@ typedef struct Tileset
 	const unsigned char* pixels;
 } Tileset;
 
-extern struct Tileset Tileset_Emerald_00;
 extern struct Tileset Tileset_UI;
+extern struct Tileset Tileset_Emerald_00;
 
 #endif //__ASSETS_H__

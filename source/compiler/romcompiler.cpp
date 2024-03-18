@@ -16,11 +16,19 @@
 #define COMPILE_CATEGORY "ROM"
 
 // Tools
-const char* default_cc      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-gcc";
-const char* default_ld      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-gcc";
-const char* default_as      = "%{OS}/arm-none-eabi/bin/arm-none-eabi-as";
-const char* default_objcopy = "%{OS}/arm-none-eabi/bin/arm-none-eabi-objcopy";
-const char* default_fix     = "%{OS}/tools/gbafix";
+#if _WIN32
+const char* default_cc      = "win32/devkitpro/devkitARM/bin/arm-none-eabi-gcc";
+const char* default_ld      = "win32/devkitpro/devkitARM/bin/arm-none-eabi-gcc";
+const char* default_as      = "win32/devkitpro/devkitARM/bin/arm-none-eabi-as";
+const char* default_objcopy = "win32/devkitpro/devkitARM/bin/arm-none-eabi-objcopy";
+const char* default_fix     = "win32/devkitpro/tools/bin/gbafix";
+#elif __linux__
+const char* default_cc      = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc";
+const char* default_ld      = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc";
+const char* default_as      = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-as";
+const char* default_objcopy = "/opt/devkitpro/devkitARM/bin/arm-none-eabi-objcopy";
+const char* default_fix     = "/opt/devkitpro/tools/bin/gbafix";
+#endif
 
 // Flags
 const char* default_cflags    = "-Wall -fomit-frame-pointer -ffast-math -O3";
@@ -180,23 +188,24 @@ RomCompilerWorker::~RomCompilerWorker()
 
 int RomCompilerWorker::runtool(QString program, const QStringList& program_args)
 {
-    QFileInfo file_info(program);
+    QString programPath = program;
+    QFileInfo file_info(programPath);
 #ifdef _WIN32
     if(!file_info.exists() && file_info.suffix() != "exe")
     {
-        if(program[program.size()-1] != '.')
-            program += '.';
-        program += "exe";
-        file_info = QFileInfo(program);
+        if(programPath[programPath.size()-1] != '.')
+            programPath += '.';
+        programPath += "exe";
+        file_info = QFileInfo(programPath);
     }
 #endif
 
     if(!file_info.exists())
     {
-        program = QApplication::applicationDirPath() + "/" + program;
-        file_info = QFileInfo(program);
+        programPath = QApplication::applicationDirPath() + "/" + program;
+        file_info = QFileInfo(programPath);
+        programPath = file_info.absoluteFilePath();
     }
-    program = file_info.absoluteFilePath();
 
     const QString programName = file_info.completeBaseName();
     if(!file_info.exists())
@@ -280,7 +289,7 @@ bool RomCompilerWorker::assemble(const QStringList& sourcefiles)
 {
     foreach(QString sourcefile, sourcefiles)
     {
-        if(QFileInfo(sourcefile).suffix() != "s")
+        if(QFileInfo(sourcefile).suffix() != "S")
             continue;
 
         QString objectfile;
@@ -446,7 +455,7 @@ void RomCompiler::build(Game* game)
 }
 
 void RomCompiler::setup(Game* game, RomCompileArgs& args)
-{    
+{
     args.variables["%{TEMP}"] = QApplication::applicationDirPath() + "/temp/";
     args.variables["%{PROJECT}"] = game->getAbsoluteProjectPath();
     args.variables["%{GAME}"] = game->getName();

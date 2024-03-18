@@ -11,6 +11,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 enum	{
 	STD_IN,
@@ -66,6 +67,12 @@ typedef struct {
 	int (*lstat_r)(struct _reent *r, const char *file, struct stat *st);
 	int (*utimes_r)(struct _reent *r, const char *filename, const struct timeval times[2]);
 
+	long (*fpathconf_r)(struct _reent *r, void *fd, int name);
+	long (*pathconf_r)(struct _reent *r, const char *path, int name);
+
+	int (*symlink_r)(struct _reent *r, const char *target, const char *linkpath);
+	ssize_t (*readlink_r)(struct _reent *r, const char *path, char *buf, size_t bufsiz);
+
 } devoptab_t;
 
 extern const devoptab_t *devoptab_list[];
@@ -77,7 +84,6 @@ extern const devoptab_t *devoptab_list[];
 #define __SYSCALL(_name) __syscall_##_name
 #endif
 
-void *__SYSCALL(sbrk_r) (struct _reent *ptr, ptrdiff_t incr);
 void __SYSCALL(exit) ( int rc );
 int  __SYSCALL(gettod_r) (struct _reent *ptr, struct timeval *tp, struct timezone *tz);
 void __SYSCALL(lock_init) (_LOCK_T *lock);
@@ -90,16 +96,35 @@ void __SYSCALL(lock_acquire_recursive) (_LOCK_RECURSIVE_T *lock);
 int  __SYSCALL(lock_try_acquire_recursive) (_LOCK_RECURSIVE_T *lock);
 void __SYSCALL(lock_release_recursive) (_LOCK_RECURSIVE_T *lock);
 void __SYSCALL(lock_close_recursive) (_LOCK_RECURSIVE_T *lock);
+
+int  __SYSCALL(cond_signal)(_COND_T *cond);
+int  __SYSCALL(cond_broadcast)(_COND_T *cond);
+int  __SYSCALL(cond_wait)(_COND_T *cond, _LOCK_T *lock, uint64_t timeout_ns);
+int  __SYSCALL(cond_wait_recursive)(_COND_T *cond, _LOCK_RECURSIVE_T *lock, uint64_t timeout_ns);
+int  __SYSCALL(thread_create)(struct __pthread_t **thread, void* (*func)(void*), void *arg, void *stack_addr, size_t stack_size);
+void*__SYSCALL(thread_join)(struct __pthread_t *thread);
+int  __SYSCALL(thread_detach)(struct __pthread_t *thread);
+void __SYSCALL(thread_exit)(void *value);
+struct __pthread_t *__SYSCALL(thread_self)(void);
+int  __SYSCALL(tls_create)(uint32_t *key, void (*destructor)(void*));
+int  __SYSCALL(tls_set)(uint32_t key, const void *value);
+void*__SYSCALL(tls_get)(uint32_t key);
+int  __SYSCALL(tls_delete)(uint32_t key);
+
 struct _reent * __SYSCALL(getreent) ();
 int __SYSCALL(clock_gettime) (clockid_t clock_id, struct timespec *tp);
 int __SYSCALL(clock_settime) (clockid_t clock_id, const struct timespec *tp);
 int __SYSCALL(clock_getres) (clockid_t clock_id, struct timespec *res);
 int __SYSCALL(nanosleep) (const struct timespec *req, struct timespec *rem);
 
+void __SYSCALL(malloc_lock) (struct _reent *ptr);
+void __SYSCALL(malloc_unlock) (struct _reent *ptr);
+
 int AddDevice( const devoptab_t* device);
 int FindDevice(const char* name);
 int RemoveDevice(const char* name);
 void setDefaultDevice( int device );
+
 const devoptab_t* GetDeviceOpTab (const char *name);
 
 void __release_handle(int fd);
