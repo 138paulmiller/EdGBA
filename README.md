@@ -4,7 +4,7 @@
 
 An IDE for making Game Boy Advance games  
 
-<img src="share/edgba_mapeditor.png" width = 640>
+[![Demo](share/edgba_mapeditor.png)](share/edgba_compile_and_run.webm)
 
 ### Features
 - Map, Sprite, and Code Editor
